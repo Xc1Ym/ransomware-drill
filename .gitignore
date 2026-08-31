@@ -1,0 +1,4 @@
+.DS_Store
+*.log
+.wncry_drill_log*.json
+演练文件夹/

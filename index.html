@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>下载中心</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", Roboto, Arial, sans-serif;
+    color: #202124; background: #fff;
+  }
+  a { text-decoration: none; color: inherit; }
+  .btn {
+    display: inline-block; background: #1a73e8; color: #fff;
+    font-size: 14px; font-weight: 500; padding: 12px 28px;
+    border-radius: 4px; border: none; cursor: pointer; text-align: center;
+  }
+  .btn:hover { background: #1765cc; box-shadow: 0 1px 3px rgba(66,133,244,.4); }
+  .btn.nav { padding: 9px 18px; font-size: 13px; }
+
+  /* logo:CHROME 主题用四色环,GENERIC 主题用单色盾 */
+  .chrome-icon {
+    width: 26px; height: 26px; border-radius: 50%; position: relative;
+    background: conic-gradient(from -30deg, #34a853 0 33.3%, #ea4335 33.3% 66.6%, #fbbc04 66.6% 100%);
+    -webkit-mask: radial-gradient(circle, transparent 36%, #000 37%);
+            mask: radial-gradient(circle, transparent 36%, #000 37%);
+  }
+  .chrome-icon::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: #4285f4;
+    -webkit-mask: radial-gradient(circle, #000 32%, transparent 33%);
+            mask: radial-gradient(circle, #000 32%, transparent 33%);
+  }
+  .brand-icon {
+    width: 26px; height: 26px; border-radius: 50%; background: #1a73e8;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 13px;
+  }
+
+  /* ============ 顶栏 ============ */
+  .navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; background: #fff;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .word { font-size: 21px; color: #202124; font-weight: 400; }
+  .nav-right { display: flex; align-items: center; gap: 28px; font-size: 14px; color: #5f6368; }
+  .nav-right a:hover { color: #1a73e8; }
+
+  /* ============ Hero ============ */
+  .hero {
+    background: linear-gradient(180deg, #f8f9fa 0%, #e8f0fe 100%);
+    padding: 72px 40px 64px;
+  }
+  body.theme-generic .hero { background: linear-gradient(180deg, #f8f9fa 0%, #dbe7f8 100%); }
+  .hero-card {
+    max-width: 1100px; margin: 0 auto;
+    background: #fff; border-radius: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 48px; padding: 56px 64px;
+    box-shadow: 0 2px 10px rgba(60,64,67,.12);
+  }
+  .hero-left h1 { font-size: 40px; font-weight: 600; letter-spacing: -.5px; }
+  .hero-left p { font-size: 18px; color: #5f6368; margin: 14px 0 26px; }
+  .hero-left .btn { font-size: 15px; padding: 14px 34px; }
+  .hero-meta { margin-top: 12px; font-size: 13px; color: #80868b; }
+  .hero-right { display: flex; align-items: center; }
+  .hero-logo-big {
+    width: 96px; height: 96px; border-radius: 50%; position: relative;
+    background: conic-gradient(from -30deg, #34a853 0 33.3%, #ea4335 33.3% 66.6%, #fbbc04 66.6% 100%);
+    -webkit-mask: radial-gradient(circle, transparent 36%, #000 37%);
+            mask: radial-gradient(circle, transparent 36%, #000 37%);
+  }
+  .hero-logo-big::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: #4285f4;
+    -webkit-mask: radial-gradient(circle, #000 32%, transparent 33%);
+            mask: radial-gradient(circle, #000 32%, transparent 33%);
+  }
+  body.theme-generic .hero-logo-big {
+    width: 96px; height: 96px; border-radius: 24px;
+    background: #1a73e8; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px; font-weight: 700;
+    -webkit-mask: none; mask: none;
+  }
+  body.theme-generic .hero-logo-big::after { display: none; }
+
+  /* ============ 特性 ============ */
+  .features {
+    max-width: 1100px; margin: 0 auto; padding: 8px 40px 56px;
+    display: flex; gap: 24px;
+  }
+  .feature {
+    flex: 1; background: #f8f9fa; border-radius: 12px;
+    padding: 24px 28px; text-align: center;
+  }
+  .feature .emoji { font-size: 26px; }
+  .feature h3 { font-size: 15px; margin: 10px 0 6px; font-weight: 500; }
+  .feature p { font-size: 13px; color: #5f6368; line-height: 1.7; }
+
+  /* ============ Footer ============ */
+  .footer {
+    background: #f8f9fa; border-top: 1px solid #e8eaed;
+    padding: 20px 40px; font-size: 12px; color: #80868b;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .footer a { color: #5f6368; margin-right: 18px; }
+  .footer a:hover { color: #1a73e8; }
+
+  /* ============ 演练标识条 / Toast ============ */
+  .drill-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99;
+    background: #fde68a; color: #78350f;
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; padding: 11px 16px;
+    font-size: 14px; flex-wrap: wrap;
+    box-shadow: 0 -1px 6px rgba(120, 53, 15, .12);
+  }
+  .drill-badge {
+    background: #b45309; color: #fff; font-size: 13px; font-weight: 700;
+    padding: 4px 14px; border-radius: 999px; letter-spacing: 3px;
+  }
+  .drill-main { font-weight: 600; font-size: 15px; }
+  .drill-sub {
+    background: rgba(255,255,255,.65); border-radius: 999px;
+    padding: 5px 14px; font-size: 12.5px; color: #92610f; white-space: nowrap;
+  }
+  .toast {
+    position: fixed; bottom: 42px; left: 50%; transform: translateX(-50%);
+    background: #202124; color: #fff; font-size: 13px;
+    padding: 12px 22px; border-radius: 8px; z-index: 100;
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3);
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+  <!-- 顶栏 -->
+  <div class="navbar">
+    <div class="brand">
+      <span class="chrome-icon" id="navIcon"></span>
+      <span class="word" id="brandName">下载中心</span>
+    </div>
+    <div class="nav-right">
+      <a href="#" onclick="downloadDrill();return false;" id="navLink1">下载</a>
+      <a href="#" onclick="return false;">功能</a>
+      <a href="#" onclick="return false;">企业</a>
+      <a href="#" onclick="return false;">帮助</a>
+      <a href="#" onclick="downloadDrill();return false;" class="btn nav" id="navLink2">下载</a>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-card">
+      <div class="hero-left">
+        <h1 id="mainTitle">快速、安全、简单。</h1>
+        <p id="subTitle">使用浏览器运行第三方应用,请从官方渠道获取。</p>
+        <button class="btn" id="dlBtn" onclick="downloadDrill()">下载</button>
+        <div class="hero-meta" id="heroMeta">适用于 Windows 11 (ARM64) · 系统要求 · 下载大小约 2.1 MB</div>
+      </div>
+      <div class="hero-right">
+        <span class="hero-logo-big" id="heroLogo">◆</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 特性 -->
+  <div class="features">
+    <div class="feature">
+      <div class="emoji">&#128274;</div>
+      <h3>安全性与稳定性</h3>
+      <p>内置安全防护机制,每次下载均经过安全检测。</p>
+    </div>
+    <div class="feature">
+      <div class="emoji">&#9889;</div>
+      <h3>快速启动</h3>
+      <p>智能识别您的系统架构,为您选择最佳版本。</p>
+    </div>
+    <div class="feature">
+      <div class="emoji">&#127775;</div>
+      <h3>个性化主题</h3>
+      <p>支持自定义主题与扩展程序,打造专属使用体验。</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>
+      <a href="#" onclick="return false;">关于</a>
+      <a href="#" onclick="return false;">隐私政策</a>
+      <a href="#" onclick="return false;">条款</a>
+      <a href="#" onclick="return false;">帮助中心</a>
+    </div>
+    <div>&copy; 2026 &middot; 仿真演示页</div>
+  </div>
+
+  <!-- 下载提示 -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 演练标识 -->
+  <div class="drill-bar">
+    <span class="drill-badge">应急演练</span>
+    <span class="drill-main" id="drillMain">本页面为应急演练模拟素材</span>
+    <span class="drill-sub" id="drillSub">点击下载将获得演练样本,仅改后缀,可一键还原</span>
+  </div>
+
+<script>
+/* ================================================================
+ * 通用钓鱼下载页配置 —— 换场景只需改这里:
+ *   theme:       'chrome'   仿浏览器官方下载页(四色环 logo)
+ *                'generic'  泛用"软件更新中心"(蓝色盾牌)
+ *   fileName:    点击下载的实际文件(与后端/样本名对应)
+ *   brandName:   顶栏品牌名
+ *   mainTitle:   大标题    subTitle: 副标题    btnText: 按钮文字
+ *   heroMeta:    按钮下方小字
+ *   drillMain:   演练标识主句   drillSub: 演练标识副句
+ * ================================================================ */
+const CONFIG = {
+  theme: 'chrome',                  // chrome:仿浏览器官方下载页(四色环) | generic:泛用蓝盾风
+  fileName: 'ransom_drill.exe',     // 点击下载的实际文件(与样本名一致)
+  brandName: 'Google Chrome',       // 顶栏品牌名(单位/产品名可改)
+  unitName: 'XXX市XXX局',       // 演练单位名(用于底部演练标识)
+  mainTitle: '快速、安全、简单。',
+  subTitle: '使用 Chrome 浏览器运行 Google 应用。',
+  btnText: '下载 Chrome',
+  heroMeta: '适用于 Windows 11 (ARM64) · 系统要求 · 下载大小约 2.1 MB'
+};
+
+// —— 渲染:把 CONFIG 应用到页面 ——
+(function () {
+  const c = CONFIG;
+  document.title = c.brandName + ' - 下载页';
+  if (c.theme === 'generic') document.body.classList.add('theme-generic');
+  document.getElementById('brandName').textContent = c.brandName;
+  document.getElementById('mainTitle').textContent = c.mainTitle;
+  document.getElementById('subTitle').textContent = c.subTitle;
+  document.getElementById('heroMeta').textContent = c.heroMeta;
+  document.getElementById('drillMain').textContent =
+    '本页面为 ' + c.unitName + ' 网络安全应急演练模拟素材';
+  document.getElementById('drillSub').textContent =
+    '点击「' + c.btnText + '」将下载演练样本 ' + c.fileName + ',仅改后缀,可一键还原';
+  // 按钮文字(顶栏两处 + Hero 主按钮,全部跟随 btnText)
+  document.getElementById('navLink1').textContent = c.btnText;
+  document.getElementById('navLink2').textContent = c.btnText;
+  document.getElementById('dlBtn').textContent = c.btnText;
+  // 图标:generic 主题换成品牌首字母盾牌
+  if (c.theme === 'generic') {
+    document.getElementById('navIcon').className = 'brand-icon';
+    document.getElementById('navIcon').textContent = (c.brandName || 'U').charAt(0);
+    document.getElementById('heroLogo').textContent = (c.brandName || 'U').charAt(0);
+  }
+})();
+
+// —— 下载:文件名来自 CONFIG ——
+function downloadDrill() {
+  const a = document.createElement('a');
+  a.href = CONFIG.fileName;
+  a.download = CONFIG.fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  const toast = document.getElementById('toast');
+  toast.textContent = '正在下载:' + CONFIG.fileName + ' ... 下载完成后请本地运行';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3800);
+}
+</script>
+</body>
+</html>

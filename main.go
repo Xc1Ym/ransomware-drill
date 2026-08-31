@@ -1,28 +1,24 @@
-//go:build windows
-
 // 假勒索病毒演练样本(应急演练专用)
 //
 // 仅用于XXX市XXX局应急演练:
 //   - 不加密文件内容,只追加 .wncry 后缀(可逆)
 //   - 无网络外联、无持久化(不写启动项)
-//   - 每个目录落一份中文勒索信,桌面背景改纯黑,弹窗显示被勒索警告
+//   - 每个目录落一份中文勒索信;弹窗/壁纸动作由平台插件实现(wall_*.go),无效时静默降级
+//   - 运行 ransomware_drill -restore 一键还原
 //
-// 构建(在 macOS 上交叉编译):
+// 构建(多平台交叉编译):
 //
-//	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags "-s -w" -o ransom_drill.exe .
+//	./build.sh
 package main
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
-	"unsafe"
 )
 
 const (
@@ -52,38 +48,8 @@ const ransomText = `!!! 你已被勒索 !!!
 【应急演练·模拟样本】
 本样本由XXX市XXX局应急演练专用:
 未加密文件内容、未损坏任何数据、无网络连接行为。
-演练结束后运行 ransomware_drill.exe -restore 可一键还原所有文件名与桌面设置。
+演练结束后运行 ransomware_drill -restore 可一键还原所有文件名与桌面设置。
 `
-
-// ---- Win32 API(LazyDLL,零第三方依赖) ----
-var (
-	user32   = syscall.NewLazyDLL("user32.dll")
-	advapi32 = syscall.NewLazyDLL("advapi32.dll")
-
-	procMessageBoxW           = user32.NewProc("MessageBoxW")
-	procSystemParametersInfoW = user32.NewProc("SystemParametersInfoW")
-
-	procRegOpenKeyExW    = advapi32.NewProc("RegOpenKeyExW")
-	procRegQueryValueExW = advapi32.NewProc("RegQueryValueExW")
-	procRegSetValueExW   = advapi32.NewProc("RegSetValueExW")
-	procRegDeleteValueW  = advapi32.NewProc("RegDeleteValueW")
-	procRegCloseKey      = advapi32.NewProc("RegCloseKey")
-)
-
-const (
-	spiSetDeskWallpaper = 0x0014
-	spifUpdateIniFile   = 0x01
-	spifSendChange      = 0x02
-	mbOk                = 0x00000000
-	mbIconError         = 0x00000010
-	mbIconInformation   = 0x00000040
-
-	hkeyCurrentUser = 0x80000001
-	keyAllAccess    = 0xF003F
-	regSZ           = 1
-	errFileNotFound = 2
-	desktopRegKey   = `Control Panel\Desktop`
-)
 
 // ---- 演练日志结构(恢复模式的依据) ----
 type fileEntry struct {
@@ -91,22 +57,29 @@ type fileEntry struct {
 	New string `json:"new"` // 勒索名(绝对路径)
 }
 
-type wallpaperBackup struct {
-	Wallpaper      string `json:"wallpaper"`
-	WallpaperSet   bool   `json:"wallpaper_set"`
-	WallpaperStyle string `json:"wallpaper_style"`
-	StyleSet       bool   `json:"style_set"`
-	TileWallpaper  string `json:"tile_wallpaper"`
-	TileSet        bool   `json:"tile_set"`
+// wallBackup 由各平台插件编码/解码(wall_backup 内容见 *_wall.go 的注释约定)
+type wallBackup struct {
+	Raw   string `json:"wallpaper"`
+	Valid bool   `json:"wallpaper_valid"`
 }
 
 type drillLog struct {
-	CreatedAt       string          `json:"created_at"`
-	WallpaperBacked bool            `json:"wallpaper_backed"` // 原壁纸配置是否已备份(重复运行只备一次)
-	RansomNotes     []string        `json:"ransom_notes"`
-	Wallpaper       wallpaperBackup `json:"wallpaper_backup"`
-	Files           []fileEntry     `json:"files"`
+	CreatedAt       string      `json:"created_at"`
+	WallpaperBacked bool        `json:"wallpaper_backed"` // 原壁纸配置是否已备份(重复运行只备一次)
+	RansomNotes     []string    `json:"ransom_notes"`
+	Wallpaper       wallBackup  `json:"wallpaper_backup"`
+	Files           []fileEntry `json:"files"`
 }
+
+// ---- 平台插件接口(每个平台一个实现文件) ----
+// wall_windows.go / wall_darwin.go / wall_linux.go 必须提供:
+//
+//	backupWallpaper() (wallBackup, error)       备份原壁纸(失败返回 Valid=false)
+//	applyBlackWallpaper() error                 设置纯黑壁纸
+//	restoreWallpaper(bk wallBackup) error       还原壁纸
+//	showAlert(title, body string)               弹"你已被勒索"通告(无图形环境时静默降级为打印)
+//	platformNotify(msg string)                  "完成/错误"提示:控制台之外的通知(无则空实现)
+//	exeSuffix() string                          ".exe"(Windows)或 ""
 
 func main() {
 	exePath := mustExecutable()
@@ -121,7 +94,7 @@ func main() {
 	}
 
 	// 无参数 = 模拟勒索;带 -restore,或以 restore 开头的文件名运行(如
-	// restore_drill.exe,GUI 版双击即还原,无需命令行) = 还原现场。
+	// restore_drill,双击即还原,无需命令行) = 还原现场。
 	restore := flag.Bool("restore", false, "一键还原被改名的文件与桌面设置")
 	flag.Parse()
 	logPath := filepath.Join(".", drillLogName)
@@ -215,14 +188,14 @@ func main() {
 
 	// ---- 5. 弹窗:你已被勒索 ----
 	fmt.Println("[行为 4/4] 弹出勒索通告...")
-	showMessageBox(ransomID, noteBody)
+	showAlert("你已被勒索! "+ransomID, noteBody)
 
 	// ---- 6. 写演练日志(恢复依据) ----
 	if err := writeJSON(logPath, log); err != nil {
 		fmt.Println("[警告] 写日志失败,恢复模式将不可用:", err)
 	}
-	notice(fmt.Sprintf("[完成] 本次新增锁定 %d 个文件,累计 %d 个。还原方法:双击 restore_drill.exe(或运行 ransomware_drill.exe -restore)。",
-		added, len(log.Files)))
+	notice(fmt.Sprintf("[完成] 本次新增锁定 %d 个文件,累计 %d 个。还原方法:运行 restore_drill%s。",
+		added, len(log.Files), exeSuffix()))
 }
 
 // collectFiles 递归收集当前目录下可处理的普通文件。
@@ -296,7 +269,7 @@ func restoreAll(logPath string) error {
 	}
 
 	fmt.Println("[还原 3/4] 恢复桌面壁纸...")
-	if log.Wallpaper.WallpaperSet || log.Wallpaper.StyleSet || log.Wallpaper.TileSet {
+	if log.Wallpaper.Valid {
 		if err := restoreWallpaper(log.Wallpaper); err != nil {
 			fmt.Println("[警告] 恢复壁纸失败(继续):", err)
 		}
@@ -311,206 +284,12 @@ func restoreAll(logPath string) error {
 	return nil
 }
 
-// ---- 注册表(壁纸) ----
-
-func regOpen(access uint32) (uintptr, error) {
-	sub, _ := syscall.UTF16PtrFromString(desktopRegKey)
-	var hk uintptr
-	r, _, err := procRegOpenKeyExW.Call(
-		uintptr(hkeyCurrentUser), uintptr(unsafe.Pointer(sub)), 0,
-		uintptr(access), uintptr(unsafe.Pointer(&hk)))
-	if r != 0 {
-		return 0, fmt.Errorf("RegOpenKeyExW: %w", err)
-	}
-	return hk, nil
-}
-
-func regReadString(hk uintptr, name string) (string, bool, error) {
-	np, _ := syscall.UTF16PtrFromString(name)
-	var typ, size uint32
-	r, _, _ := procRegQueryValueExW.Call(hk, uintptr(unsafe.Pointer(np)), 0,
-		uintptr(unsafe.Pointer(&typ)), 0, uintptr(unsafe.Pointer(&size)))
-	if r != 0 {
-		return "", false, nil // 值不存在(2)或其它错误:视为"无备份"
-	}
-	if size == 0 {
-		return "", true, nil
-	}
-	buf := make([]uint16, size/2+1)
-	r, _, err := procRegQueryValueExW.Call(hk, uintptr(unsafe.Pointer(np)), 0,
-		uintptr(unsafe.Pointer(&typ)), uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size)))
-	if r != 0 {
-		return "", false, fmt.Errorf("RegQueryValueExW(%s): %w", name, err)
-	}
-	return syscall.UTF16ToString(buf), true, nil
-}
-
-func regWriteString(hk uintptr, name, val string) error {
-	np, _ := syscall.UTF16PtrFromString(name)
-	vp, _ := syscall.UTF16PtrFromString(val)
-	r, _, err := procRegSetValueExW.Call(hk, uintptr(unsafe.Pointer(np)), 0,
-		uintptr(regSZ), uintptr(unsafe.Pointer(vp)), uintptr((len(val)+1)*2))
-	if r != 0 {
-		return fmt.Errorf("RegSetValueExW(%s): %w", name, err)
-	}
-	return nil
-}
-
-func regDeleteValue(hk uintptr, name string) error {
-	np, _ := syscall.UTF16PtrFromString(name)
-	r, _, _ := procRegDeleteValueW.Call(hk, uintptr(unsafe.Pointer(np)))
-	if r == errFileNotFound {
-		return nil
-	}
-	if r != 0 {
-		return syscall.Errno(r)
-	}
-	return nil
-}
-
-func regClose(hk uintptr) {
-	procRegCloseKey.Call(hk)
-}
-
-// backupWallpaper 读备份 HKCU\Control Panel\Desktop 的三个壁纸键。
-func backupWallpaper() (wallpaperBackup, error) {
-	hk, err := regOpen(keyAllAccess)
-	if err != nil {
-		return wallpaperBackup{}, err
-	}
-	defer regClose(hk)
-
-	var bk wallpaperBackup
-	bk.Wallpaper, bk.WallpaperSet, err = regReadString(hk, "Wallpaper")
-	if err != nil {
-		return bk, err
-	}
-	bk.WallpaperStyle, bk.StyleSet, err = regReadString(hk, "WallpaperStyle")
-	if err != nil {
-		return bk, err
-	}
-	bk.TileWallpaper, bk.TileSet, err = regReadString(hk, "TileWallpaper")
-	return bk, err
-}
-
-// applyBlackWallpaper 生成纯黑 BMP 写入临时目录,并设为桌面壁纸。
-func applyBlackWallpaper() error {
-	bmp := filepath.Join(os.Getenv("TEMP"), "drill_wallpaper_black.bmp")
-	if err := writeBlackBMP(bmp, 1920, 1080); err != nil {
-		return err
-	}
-	hk, err := regOpen(keyAllAccess)
-	if err != nil {
-		return err
-	}
-	defer regClose(hk)
-	if err := regWriteString(hk, "Wallpaper", bmp); err != nil {
-		return err
-	}
-	if err := regWriteString(hk, "WallpaperStyle", "10"); err != nil { // 填充
-		return err
-	}
-	if err := regWriteString(hk, "TileWallpaper", "0"); err != nil {
-		return err
-	}
-	setWallpaper(bmp)
-	return nil
-}
-
-func restoreWallpaper(bk wallpaperBackup) error {
-	hk, err := regOpen(keyAllAccess)
-	if err != nil {
-		return err
-	}
-	defer regClose(hk)
-
-	if bk.WallpaperSet {
-		if err := regWriteString(hk, "Wallpaper", bk.Wallpaper); err != nil {
-			return err
-		}
-	} else {
-		if err := regDeleteValue(hk, "Wallpaper"); err != nil {
-			return err
-		}
-	}
-	if bk.StyleSet {
-		if err := regWriteString(hk, "WallpaperStyle", bk.WallpaperStyle); err != nil {
-			return err
-		}
-	} else {
-		if err := regDeleteValue(hk, "WallpaperStyle"); err != nil {
-			return err
-		}
-	}
-	if bk.TileSet {
-		if err := regWriteString(hk, "TileWallpaper", bk.TileWallpaper); err != nil {
-			return err
-		}
-	} else {
-		if err := regDeleteValue(hk, "TileWallpaper"); err != nil {
-			return err
-		}
-	}
-	setWallpaper(bk.Wallpaper)
-	return nil
-}
-
-// setWallpaper 调用 SystemParametersInfoW 即时刷新壁纸。
-func setWallpaper(path string) {
-	p, _ := syscall.UTF16PtrFromString(path)
-	procSystemParametersInfoW.Call(spiSetDeskWallpaper, 0,
-		uintptr(unsafe.Pointer(p)), uintptr(spifUpdateIniFile|spifSendChange))
-}
-
-// writeBlackBMP 生成 24 位纯黑 BMP(像素区全零)。
-func writeBlackBMP(path string, w, h int) error {
-	rowSize := (w*3 + 3) &^ 3
-	imgSize := rowSize * h
-	data := make([]byte, 54+imgSize)
-	le := binary.LittleEndian
-	copy(data[0:2], "BM")
-	le.PutUint32(data[2:6], uint32(len(data))) // 文件大小
-	le.PutUint32(data[10:14], 54)              // 像素数据偏移
-	le.PutUint32(data[14:18], 40)              // BITMAPINFOHEADER 大小
-	le.PutUint32(data[18:22], uint32(w))
-	le.PutUint32(data[22:26], uint32(h))
-	le.PutUint16(data[26:28], 1) // planes
-	le.PutUint16(data[28:30], 24)
-	le.PutUint32(data[30:34], 0) // BI_RGB
-	le.PutUint32(data[34:38], uint32(imgSize))
-	le.PutUint32(data[38:42], 2835)
-	le.PutUint32(data[42:46], 2835)
-	return os.WriteFile(path, data, 0644)
-}
-
-// showMessageBox 弹出"你已被勒索!"警告窗(UTF-16)。
-func showMessageBox(ransomID, body string) {
-	title, _ := syscall.UTF16PtrFromString("你已被勒索! " + ransomID)
-	text, _ := syscall.UTF16PtrFromString(body)
-	procMessageBoxW.Call(0, uintptr(unsafe.Pointer(text)), uintptr(unsafe.Pointer(title)),
-		uintptr(mbOk|mbIconError))
-}
-
 // ---- 演练提示输出 ----
 
-// isGUI 判断是否处于无控制台的 GUI 模式(-H=windowsgui 构建或双击启动时
-// GetConsoleWindow 返回 NULL)。
-func isGUI() bool {
-	r, _, _ := syscall.NewLazyDLL("kernel32.dll").NewProc("GetConsoleWindow").Call()
-	return r == 0
-}
-
-var guiMode = isGUI()
-
-// notice 输出演练提示:CUI 走控制台,GUI 模式补一个 MessageBox,确保用户能看到结果。
+// notice 输出演练提示:始终打印控制台;平台补充系统通知(见 platformNotify)。
 func notice(msg string) {
 	fmt.Println(msg)
-	if guiMode {
-		title, _ := syscall.UTF16PtrFromString("演练提示")
-		text, _ := syscall.UTF16PtrFromString(msg)
-		procMessageBoxW.Call(0, uintptr(unsafe.Pointer(text)), uintptr(unsafe.Pointer(title)),
-			uintptr(mbOk|mbIconInformation))
-	}
+	platformNotify(msg)
 }
 
 // ---- 小工具 ----

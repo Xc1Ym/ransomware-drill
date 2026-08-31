@@ -1,6 +1,6 @@
-# XXX市XXX局 勒索病毒应急演练样本(假)
+# 勒索病毒应急演练样本(假)
 
-XXX市XXX局应急演练专用:一个**可逆的**仿真勒索病毒样本,运行在 Windows ARM64 虚拟机中,
+一个**可逆的**仿真勒索病毒样本，
 模拟"机器中勒索病毒"事件,驱动应急响应流程(发现 → 研判 → 处置 → 恢复)。
 
 样本**只改文件名后缀,不加密内容**;无网络外联、无持久化,双击还原器即可一键复原现场。
@@ -34,9 +34,9 @@ XXX市XXX局应急演练专用:一个**可逆的**仿真勒索病毒样本,运�
 ./build.sh        # gofmt 检查 → go vet → 交叉编译三个产物(含 -trimpath,不泄漏本机路径)
 ```
 
-## 部署到 Windows 11 ARM64 虚拟机
+## 部署到 Windows 11 虚拟机
 
-1. 启动 Win11 ARM64 虚拟机,拷贝 `ransom_drill.exe` / `restore_drill.exe`(教学观察可加
+1. 启动 Win11 虚拟机,拷贝 `ransom_drill.exe` / `restore_drill.exe`(教学观察可加
    `ransom_drill_console.exe`)进演练目录,如 `D:\drill`
 2. 在演练目录先放几个普通文件:`报告.docx`、`数据.xlsx`、`照片.jpg`
 
@@ -89,7 +89,7 @@ const CONFIG = {
   mainTitle: '快速、安全、简单。',    // 大标题
   subTitle: '使用 Chrome 浏览器运行 Google 应用。',
   btnText: '下载 Chrome',           // 按钮文字(顶栏/导航/主按钮同步)
-  heroMeta: '适用于 Windows 11 (ARM64) · 系统要求 · 下载大小约 2.1 MB'
+  heroMeta: '适用于 Windows 11 · 系统要求 · 下载大小约 2.1 MB'
 };
 ```
 
@@ -109,10 +109,4 @@ const CONFIG = {
 
 - 仅限隔离的演练虚拟机内运行,不要在生产/重要机器上执行
 - 加密识别码(WNCRY-2026-xxx)为演练内唯一标识,对应演练复盘
-- 外发前运行仓库外的脱敏自检脚本 `../verify.sh`(敏感词表在库外,不入库)
 
-## 自检(仓库外脚本,不入库)
-
-```bash
-../verify.sh      # ①文件名体系 ②敏感词/路径泄漏 ③CONFIG↔README 一致 ④exe 内嵌文案
-```

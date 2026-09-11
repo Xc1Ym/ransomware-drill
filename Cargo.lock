@@ -607,6 +607,7 @@ name = "drill-locker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "drill-core",
  "eframe",
  "egui",

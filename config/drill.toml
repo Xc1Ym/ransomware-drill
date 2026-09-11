@@ -155,7 +155,7 @@ title = "{org}勒索病毒应急演练"
 subtitle = "请选择演练场景"
 # 两个场景卡片的标题与说明
 card_download_title = "文件下载勒索"
-card_download_desc = "模拟员工在搜索结果里点进仿冒下载站，下载并运行看似正常的「优化工具」，实际中招。"
+card_download_desc = "模拟员工在搜索结果里点进仿冒下载站，下载并运行看似正常的软件，实际中招。"
 card_mail_title = "邮件勒索"
 card_mail_desc = "模拟员工收到一封伪装成人事通知的钓鱼邮件，点开附件后中招。"
 

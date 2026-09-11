@@ -344,11 +344,11 @@
     <span class="envelope">
       <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z"/></svg>
     </span>
-    QQ邮箱
+    {{MAIL_BRAND}}
   </div>
   <div class="search">
     <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
-    搜索邮件
+    {{MAIL_SEARCH_PH}}
   </div>
   <div class="spacer"></div>
   <div class="user">
@@ -359,76 +359,14 @@
 
 <div class="main">
   <div class="sidebar">
-    <div class="compose">写 信</div>
-    <nav class="nav">
-      <a class="active" href="javascript:void(0)">收件箱 <span class="badge">1</span></a>
-      <a href="javascript:void(0)">星标邮件</a>
-      <a href="javascript:void(0)">群邮件</a>
-      <a href="javascript:void(0)">草稿箱</a>
-      <a href="javascript:void(0)">已发送</a>
-      <a href="javascript:void(0)">已删除</a>
-      <a href="javascript:void(0)">垃圾箱</a>
-      <div class="group">我的文件夹</div>
-      <a href="javascript:void(0)">工作文档</a>
-      <a href="javascript:void(0)">会议纪要</a>
-      <a href="javascript:void(0)">归档</a>
-    </nav>
+    <div class="compose">{{MAIL_COMPOSE_LABEL}}</div>
+    <!-- 导航与邮件列表都由脚本按 config/drill.toml 渲染 -->
+    <nav class="nav" id="nav"></nav>
   </div>
 
   <div class="list">
-    <div class="head"><b>收件箱</b><span>共 5 封</span></div>
-    <div class="items">
-      <!-- 钓鱼邮件：未读、置顶 -->
-      <div class="item unread active" data-mail="phish">
-        <div class="row1">
-          <span class="dot"></span>
-          <span class="from">{{MAIL_SENDER_NAME}}</span>
-          <span class="time">{{MAIL_TIME}}</span>
-        </div>
-        <div class="subject">{{MAIL_SUBJECT}}</div>
-        <div class="preview">各位同事，2026年度工资调整明细已核算完毕，请查收附件…</div>
-      </div>
-
-      <div class="item" data-mail="meeting">
-        <div class="row1">
-          <span class="dot hidden"></span>
-          <span class="from">行政部</span>
-          <span class="time">昨天 16:40</span>
-        </div>
-        <div class="subject">关于本周五部门例会的通知</div>
-        <div class="preview">请各部门负责人提前准备本周工作汇报材料，会议地点为 3 楼第二会议室…</div>
-      </div>
-
-      <div class="item" data-mail="it">
-        <div class="row1">
-          <span class="dot hidden"></span>
-          <span class="from">IT 服务台</span>
-          <span class="time">昨天 10:12</span>
-        </div>
-        <div class="subject">关于办公网例行维护的通知</div>
-        <div class="preview">信息中心将于本周六 22:00 至次日 02:00 对办公网络进行例行维护…</div>
-      </div>
-
-      <div class="item" data-mail="team">
-        <div class="row1">
-          <span class="dot hidden"></span>
-          <span class="from">工会</span>
-          <span class="time">9月9日</span>
-        </div>
-        <div class="subject">2026年秋季团建活动安排</div>
-        <div class="preview">本次团建定于下月中旬，请各位同事在本周五前完成报名…</div>
-      </div>
-
-      <div class="item" data-mail="train">
-        <div class="row1">
-          <span class="dot hidden"></span>
-          <span class="from">培训中心</span>
-          <span class="time">9月8日</span>
-        </div>
-        <div class="subject">信息安全意识培训（第三期）报名通知</div>
-        <div class="preview">本期培训将围绕钓鱼邮件识别、弱口令风险等内容展开…</div>
-      </div>
-    </div>
+    <div class="head"><b>收件箱</b><span id="listCount"></span></div>
+    <div class="items" id="items"></div>
   </div>
 
   <div class="detail" id="detail"></div>
@@ -436,43 +374,54 @@
 
 <script>
   (function () {
-    // ---- 此处集中定义邮件内容。钓鱼邮件的正文与附件信息按配置注入 ----
+    // ---- 以下数据全部来自 config/drill.toml ----
     var PHISH = {
       subject: '{{MAIL_SUBJECT}}',
       name: '{{MAIL_SENDER_NAME}}',
       addr: '{{MAIL_SENDER_EMAIL}}',
       time: '{{MAIL_TIME}}',
+      preview: '{{MAIL_PREVIEW}}',
       body: {{MAIL_BODY_JSON}},
       attachment: '{{MAIL_ATTACHMENT}}',
       size: '{{MAIL_ATTACHMENT_SIZE}}'
     };
-
-    var PLAIN = {
-      meeting: {
-        subject: '关于本周五部门例会的通知',
-        name: '行政部', addr: 'admin@example.com', time: '昨天 16:40',
-        body: '各位同事：\n\n请各部门负责人提前准备本周工作汇报材料，并于会前发送至行政部邮箱。\n\n会议时间：本周五 14:00\n会议地点：3 楼第二会议室\n\n行政部'
-      },
-      it: {
-        subject: '关于办公网例行维护的通知',
-        name: 'IT 服务台', addr: 'itsupport@example.com', time: '昨天 10:12',
-        body: '各位同事：\n\n信息中心将于本周六 22:00 至次日 02:00 对办公网络进行例行维护，期间内网访问可能中断。\n\n请提前保存工作内容，由此带来的不便敬请谅解。\n\n信息中心'
-      },
-      team: {
-        subject: '2026年秋季团建活动安排',
-        name: '工会', addr: 'union@example.com', time: '9月9日',
-        body: '各位同事：\n\n本次团建定于下月中旬举行，为期两天，请各位同事在本周五前完成报名。\n\n具体行程与集合安排将于报名结束后另行通知。\n\n工会'
-      },
-      train: {
-        subject: '信息安全意识培训（第三期）报名通知',
-        name: '培训中心', addr: 'training@example.com', time: '9月8日',
-        body: '各位同事：\n\n本期培训将围绕钓鱼邮件识别、弱口令风险、移动介质管理等内容展开，请各部门安排人员参加。\n\n培训中心'
-      }
-    };
+    var FOLDER = {{MAIL_FOLDER_JSON}};
+    var NAV_MAIN = {{MAIL_NAV_JSON}};
+    var NAV_GROUP_TITLE = '{{MAIL_NAV_GROUP_TITLE}}';
+    var NAV_GROUP = {{MAIL_NAV_GROUP_JSON}};
 
     var detail = document.getElementById('detail');
+    var itemsBox = document.getElementById('items');
 
-    // 附件的下载目标：复用与下载页一致的平台判断
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) { e.className = cls; }
+      if (text !== undefined) { e.textContent = text; }
+      return e;
+    }
+
+    // ---------- 左侧导航 ----------
+    (function () {
+      var nav = document.getElementById('nav');
+      NAV_MAIN.forEach(function (t, i) {
+        var a = el('a', i === 0 ? 'active' : '', t);
+        a.href = 'javascript:void(0)';
+        if (i === 0) {
+          a.appendChild(el('span', 'badge', '1'));
+        }
+        nav.appendChild(a);
+      });
+      if (NAV_GROUP.length) {
+        nav.appendChild(el('div', 'group', NAV_GROUP_TITLE));
+        NAV_GROUP.forEach(function (t) {
+          var a = el('a', '', t);
+          a.href = 'javascript:void(0)';
+          nav.appendChild(a);
+        });
+      }
+    })();
+
+    // ---------- 附件的下载目标（与下载页保持同一套平台判断）----------
     function targetFile() {
       var ua = navigator.userAgent;
       var isArm = /ARM64|aarch64|arm64/i.test(ua);
@@ -480,81 +429,126 @@
         return isArm ? 'drill-locker-windows-arm64.exe' : 'drill-locker-windows-amd64.exe';
       }
       if (/Mac OS X|Macintosh/i.test(ua)) {
-        // macOS 只提供 Apple Silicon 版，见 download.html 中的说明
+        // macOS 只提供 Apple Silicon 版
         return 'drill-locker-darwin-arm64';
       }
       return isArm ? 'drill-locker-linux-arm64' : 'drill-locker-linux-amd64';
     }
 
-    function esc(s) {
-      return String(s).replace(/[&<>"]/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-      });
-    }
+    // ---------- 右侧详情 ----------
+    function renderDetail(m, withAttach) {
+      detail.innerHTML = '';
 
-    function renderPhish() {
-      var file = targetFile();
-      detail.innerHTML =
-        '<div class="subject">' + esc(PHISH.subject) + '</div>' +
-        '<div class="meta">' +
-          '<div class="avatar">' + esc(PHISH.name.charAt(0)) + '</div>' +
-          '<div class="who"><div class="name">' + esc(PHISH.name) + '</div>' +
-          '<div class="addr">&lt;' + esc(PHISH.addr) + '&gt;</div></div>' +
-          '<div class="when">' + esc(PHISH.time) + '</div>' +
-        '</div>' +
-        '<div class="body">' + esc(PHISH.body) + '</div>' +
-        '<div class="attach">' +
-          '<div class="label">附件（1 个）</div>' +
-          '<a class="file" id="attachBtn" href="#">' +
-            '<span class="fico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 7V3.5L18.5 9z"/></svg></span>' +
-            '<span><div class="fname">' + esc(PHISH.attachment) + '</div>' +
-            '<div class="fsize">' + esc(PHISH.size) + '</div></span>' +
-            '<span class="dl">下载</span>' +
-          '</a>' +
-        '</div>';
+      detail.appendChild(el('div', 'subject', m.subject));
 
-      document.getElementById('attachBtn').addEventListener('click', function (e) {
+      var meta = el('div', 'meta');
+      meta.appendChild(el('div', 'avatar', (m.name || '?').charAt(0)));
+      var who = el('div', 'who');
+      who.appendChild(el('div', 'name', m.name));
+      who.appendChild(el('div', 'addr', '<' + m.addr + '>'));
+      meta.appendChild(who);
+      meta.appendChild(el('div', 'when', m.time));
+      detail.appendChild(meta);
+
+      detail.appendChild(el('div', 'body', m.body));
+
+      if (!withAttach) {
+        detail.appendChild(el('div', 'plain-tip', '本邮件无附件。'));
+        return;
+      }
+
+      var box = el('div', 'attach');
+      box.appendChild(el('div', 'label', '附件（1 个）'));
+
+      var file = el('a', 'file');
+      file.href = '#';
+      var ico = el('span', 'fico');
+      ico.innerHTML = '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 7V3.5L18.5 9z"/></svg>';
+      file.appendChild(ico);
+
+      var info = el('span');
+      info.appendChild(el('div', 'fname', m.attachment));
+      info.appendChild(el('div', 'fsize', m.size));
+      file.appendChild(info);
+      file.appendChild(el('span', 'dl', '下载'));
+
+      file.addEventListener('click', function (e) {
         e.preventDefault();
+        var target = targetFile();
         var a = document.createElement('a');
-        a.href = file;
-        a.download = file;
+        a.href = target;
+        a.download = target;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
       });
+
+      box.appendChild(file);
+      detail.appendChild(box);
     }
 
-    function renderPlain(m) {
-      detail.innerHTML =
-        '<div class="subject">' + esc(m.subject) + '</div>' +
-        '<div class="meta">' +
-          '<div class="avatar">' + esc(m.name.charAt(0)) + '</div>' +
-          '<div class="who"><div class="name">' + esc(m.name) + '</div>' +
-          '<div class="addr">&lt;' + esc(m.addr) + '&gt;</div></div>' +
-          '<div class="when">' + esc(m.time) + '</div>' +
-        '</div>' +
-        '<div class="body">' + esc(m.body) + '</div>' +
-        '<div class="plain-tip">本邮件无附件。</div>';
-    }
+    // ---------- 邮件列表 ----------
+    // 第一条固定是钓鱼邮件（未读、置顶），其余来自配置
+    var mails = [{
+      phish: true,
+      sender: PHISH.name,
+      time: PHISH.time,
+      subject: PHISH.subject,
+      preview: PHISH.preview
+    }].concat(FOLDER.map(function (f) {
+      return {
+        phish: false,
+        sender: f.sender,
+        time: f.time,
+        subject: f.subject,
+        preview: f.preview,
+        raw: f
+      };
+    }));
 
-    // 点击邮件列表切换详情
-    document.querySelectorAll('.item').forEach(function (el) {
-      el.addEventListener('click', function () {
-        document.querySelectorAll('.item').forEach(function (o) {
+    document.getElementById('listCount').textContent = '共 ' + mails.length + ' 封';
+
+    mails.forEach(function (m, idx) {
+      var item = el('div', 'item' + (idx === 0 ? ' unread active' : ''));
+
+      var row1 = el('div', 'row1');
+      row1.appendChild(el('span', 'dot' + (idx === 0 ? '' : ' hidden')));
+      row1.appendChild(el('span', 'from', m.sender));
+      row1.appendChild(el('span', 'time', m.time));
+      item.appendChild(row1);
+
+      item.appendChild(el('div', 'subject', m.subject));
+      item.appendChild(el('div', 'preview', m.preview));
+
+      item.addEventListener('click', function () {
+        Array.prototype.forEach.call(itemsBox.children, function (o) {
           o.classList.remove('active');
         });
-        el.classList.add('active');
-        el.classList.remove('unread');
-        var dot = el.querySelector('.dot');
-        if (dot) { dot.classList.add('hidden'); }
+        item.classList.add('active');
+        item.classList.remove('unread');
+        var d = item.querySelector('.dot');
+        if (d) { d.classList.add('hidden'); }
 
-        var key = el.getAttribute('data-mail');
-        if (key === 'phish') { renderPhish(); } else { renderPlain(PLAIN[key]); }
+        if (m.phish) {
+          renderDetail({
+            subject: PHISH.subject, name: PHISH.name, addr: PHISH.addr,
+            time: PHISH.time, body: PHISH.body,
+            attachment: PHISH.attachment, size: PHISH.size
+          }, true);
+        } else {
+          var f = m.raw;
+          renderDetail({
+            subject: f.subject, name: f.sender, addr: f.addr,
+            time: f.time, body: f.body
+          }, false);
+        }
       });
+
+      itemsBox.appendChild(item);
     });
 
     // 默认打开钓鱼邮件——这是演练的主线
-    renderPhish();
+    itemsBox.firstChild.click();
   })();
 </script>
 

@@ -253,7 +253,7 @@
   <div class="header-row">
     <a class="logo" href="index.html">
       <span class="ring"><i>{{SHORT_NAME}}</i></span>
-      <span class="word">搜索</span>
+      <span class="word">{{SEARCH_BRAND}}</span>
     </a>
 
     <form class="searchbar" id="searchForm" autocomplete="off">
@@ -268,91 +268,22 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <a class="active" href="javascript:void(0)">全部</a>
-    <a href="javascript:void(0)">图片</a>
-    <a href="javascript:void(0)">视频</a>
-    <a href="javascript:void(0)">新闻</a>
-    <a href="javascript:void(0)">地图</a>
-  </div>
+  <!-- 栏目与结果都由脚本按 config/drill.toml 渲染 -->
+  <div class="tabs" id="tabs"></div>
 </div>
 
 <div class="content">
-  <div class="stats" id="stats">找到约 2,140,000 条结果 （用时 0.38 秒）</div>
+  <div class="stats" id="stats">{{SEARCH_STATS}}</div>
 
-  <!-- ===== 广告位：演练用的「陷阱」链接，点击进入下载页 ===== -->
-  <div class="result">
-    <div class="ad-label">广告</div>
-    <div class="crumb">
-      <span class="fav" id="trapFav">下</span>
-      <span class="meta">
-        <span class="site" id="trapSite">{{FAKE_DOMAIN}}</span>
-        <span class="url" id="trapUrl">https://{{FAKE_DOMAIN}} › download</span>
-      </span>
-    </div>
-    <a class="title" id="trapTitle" href="download.html">下载</a>
-    <p class="snippet" id="trapSnippet">摘要</p>
-  </div>
-
-  <!-- ===== 以下为占据版面的装饰结果，均不可点击 ===== -->
-  <div class="result">
-    <div class="crumb">
-      <span class="fav">百</span>
-      <span class="meta">
-        <span class="site">百科</span>
-        <span class="url">https://baike.example.com › item › 下载</span>
-      </span>
-    </div>
-    <a class="title" href="javascript:void(0)">下载_百度百科</a>
-    <p class="snippet">
-      下载（Download）是指将文件从远程服务器传输到本地设备的过程。在下载软件时应当
-      优先选择官方网站，注意核对域名，避免从来源不明的第三方站点获取安装包……
-    </p>
-  </div>
-
-  <div class="result">
-    <div class="crumb">
-      <span class="fav">安</span>
-      <span class="meta">
-        <span class="site">安全中心</span>
-        <span class="url">https://security.example.com › guide › safe-download</span>
-      </span>
-    </div>
-    <a class="title" href="javascript:void(0)">如何安全地下载软件？这份指南请收好 - 安全中心</a>
-    <p class="snippet">
-      一、认准官方域名；二、警惕搜索结果中的广告位链接；三、留意安装包的体积与数字签名；
-      四、安装前用安全软件扫描。近年来，通过仿冒下载站投递勒索软件已成为常见的攻击手法……
-    </p>
-  </div>
-
-  <div class="result">
-    <div class="crumb">
-      <span class="fav">知</span>
-      <span class="meta">
-        <span class="site">知识库</span>
-        <span class="url">https://wiki.example.com › 教程</span>
-      </span>
-    </div>
-    <a class="title" href="javascript:void(0)">软件下载与安装常见问题汇总</a>
-    <p class="snippet">
-      整理了用户在下载、安装过程中经常遇到的问题：下载速度慢怎么办、安装包打不开、
-      提示「无法验证开发者」如何处理、如何彻底卸载软件等，供参考。
-    </p>
-  </div>
+  <!-- 陷阱条目与装饰结果都由脚本按 config/drill.toml 渲染 -->
+  <div id="results"></div>
 
   <div class="related">
     <h3>相关搜索</h3>
-    <ul>
-      <li><a href="javascript:void(0)">软件 官方下载</a></li>
-      <li><a href="javascript:void(0)">下载站 推荐</a></li>
-      <li><a href="javascript:void(0)">安装包 打不开 解决</a></li>
-      <li><a href="javascript:void(0)">如何辨别 仿冒网站</a></li>
-    </ul>
+    <ul id="related"></ul>
   </div>
 
-  <div class="pager">
-    <b>1</b>&nbsp;2&nbsp;3&nbsp;4&nbsp;5&nbsp;…&nbsp;下一页
-  </div>
+  <div class="pager" id="pager"></div>
 </div>
 
 <div class="drill-notice">
@@ -364,48 +295,132 @@
 
 <script>
   (function () {
+    var TABS = {{SEARCH_TABS_JSON}};
+    var PAGER = {{SEARCH_PAGER_JSON}};
+    var RELATED = {{SEARCH_RELATED_JSON}};
+    var DECOR = {{SEARCH_RESULTS_JSON}};
+    var DEFAULT_KEYWORD = '{{SEARCH_DEFAULT_KEYWORD}}';
+    var FAKE_DOMAIN = '{{FAKE_DOMAIN}}';
+    var DOWNLOAD_NAME = '{{DOWNLOAD_NAME}}';
+
     var params = new URLSearchParams(location.search);
-    var q = (params.get('q') || '').trim() || '软件 官方下载';
+    var q = (params.get('q') || '').trim() || DEFAULT_KEYWORD;
 
     // 回填搜索框
     document.getElementById('q').value = q;
     document.title = q + ' - 搜索';
 
-    // 判断是否在搜浏览器类关键词——这类场景下把陷阱伪装成「浏览器官方下载」，
-    // 是真实攻击里最常见的手法。
-    var isBrowser = /chrome|chromium|浏览器|browser|edge|firefox|火狐|谷歌/i.test(q);
+    // ---------- 栏目 ----------
+    var tabsBox = document.getElementById('tabs');
+    TABS.forEach(function (t, i) {
+      var a = document.createElement('a');
+      a.textContent = t;
+      a.href = 'javascript:void(0)';
+      if (i === 0) { a.className = 'active'; }
+      tabsBox.appendChild(a);
+    });
 
+    // ---------- 相关搜索 ----------
+    var relBox = document.getElementById('related');
+    RELATED.forEach(function (r) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = 'javascript:void(0)';
+      a.textContent = r;
+      li.appendChild(a);
+      relBox.appendChild(li);
+    });
+
+    // ---------- 分页 ----------
+    var pagerBox = document.getElementById('pager');
+    PAGER.forEach(function (p, i) {
+      if (i) { pagerBox.appendChild(document.createTextNode(' ')); }
+      if (i === 0) {
+        var b = document.createElement('b');
+        b.textContent = p;
+        pagerBox.appendChild(b);
+      } else {
+        pagerBox.appendChild(document.createTextNode(p));
+      }
+    });
+
+    // ---------- 结果条目 ----------
+    function buildResult(r, adLabel) {
+      var wrap = document.createElement('div');
+      wrap.className = 'result';
+
+      if (adLabel) {
+        var ad = document.createElement('div');
+        ad.className = 'ad-label';
+        ad.textContent = adLabel;
+        wrap.appendChild(ad);
+      }
+
+      var crumb = document.createElement('div');
+      crumb.className = 'crumb';
+      var fav = document.createElement('span');
+      fav.className = 'fav';
+      fav.textContent = r.favicon || '';
+      var meta = document.createElement('span');
+      meta.className = 'meta';
+      var site = document.createElement('span');
+      site.className = 'site';
+      site.textContent = r.site;
+      var url = document.createElement('span');
+      url.className = 'url';
+      url.textContent = r.url;
+      meta.appendChild(site);
+      meta.appendChild(url);
+      crumb.appendChild(fav);
+      crumb.appendChild(meta);
+      wrap.appendChild(crumb);
+
+      var title = document.createElement('a');
+      title.className = 'title';
+      title.textContent = r.title;
+      title.href = r.href || 'javascript:void(0)';
+      if (!r.href) { title.addEventListener('click', function (e) { e.preventDefault(); }); }
+      wrap.appendChild(title);
+
+      var snip = document.createElement('p');
+      snip.className = 'snippet';
+      snip.textContent = r.snippet;
+      wrap.appendChild(snip);
+
+      return wrap;
+    }
+
+    // 置顶的「广告」陷阱条目：按关键词动态生成。
+    // 搜浏览器类关键词时伪装成「浏览器官方下载」，这是真实攻击里最常见的手法。
+    var isBrowser = /chrome|chromium|浏览器|browser|edge|firefox|火狐|谷歌/i.test(q);
     var trap = {
-      site: '{{FAKE_DOMAIN}}',
-      url: 'https://{{FAKE_DOMAIN}} › download',
-      href: 'download.html',
+      favicon: '下',
+      site: FAKE_DOMAIN,
+      url: 'https://' + FAKE_DOMAIN + ' › download',
+      href: isBrowser ? 'download.html?as=chrome' : 'download.html',
       title: '',
       snippet: ''
     };
 
     if (isBrowser) {
-      document.getElementById('trapFav').textContent = 'C';
-      // 关键词里已经含「下载」时不要重复拼接，否则标题会变成「chrome下载 官方下载」
+      trap.favicon = 'C';
+      // 关键词里已经含「下载」时不要重复拼接
       trap.title = /下载|download/i.test(q)
         ? q + ' - 极速安全稳定版 官方正版'
         : q + ' 官方下载 - 极速安全稳定版';
       trap.snippet = '官方正版下载，无捆绑无广告，安装包体积小巧，兼容主流操作系统。'
                    + '已通过多项安全认证，支持一键静默安装，立即下载体验。';
-      trap.href = 'download.html?as=chrome';
     } else {
-      document.getElementById('trapFav').textContent = '下';
-      trap.title = '{{DOWNLOAD_NAME}} 官方下载 - 官方正版免费安装';
-      trap.snippet = '「{{DOWNLOAD_NAME}}」官方下载入口。体积小、运行稳定，支持一键清理、'
+      trap.title = DOWNLOAD_NAME + ' 官方下载 - 官方正版免费安装';
+      trap.snippet = '「' + DOWNLOAD_NAME + '」官方下载入口。体积小、运行稳定，支持一键清理、'
                    + '开机加速与驱动检测，已服务上万家企业用户。官方直链，极速下载。';
     }
 
-    document.getElementById('trapTitle').textContent = trap.title;
-    document.getElementById('trapTitle').setAttribute('href', trap.href);
-    document.getElementById('trapSite').textContent = trap.site;
-    document.getElementById('trapUrl').textContent = trap.url;
-    document.getElementById('trapSnippet').textContent = trap.snippet;
+    var box = document.getElementById('results');
+    box.appendChild(buildResult(trap, '广告'));
+    DECOR.forEach(function (r) { box.appendChild(buildResult(r, '')); });
 
-    // 搜索框回车 = 重新搜索
+    // ---------- 搜索框 ----------
     document.getElementById('searchForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var nq = document.getElementById('q').value.trim();

@@ -113,14 +113,15 @@ fn package() -> Result<()> {
     }
 
     // 2) 网页
-    let index = dist.join("index.html");
-    std::fs::write(&index, drill_core::template::index_html(&cfg))
-        .with_context(|| format!("写入失败：{}", index.display()))?;
-    let download = dist.join("download.html");
-    std::fs::write(&download, drill_core::template::download_html(&cfg))
-        .with_context(|| format!("写入失败：{}", download.display()))?;
-    println!("    index.html");
-    println!("    download.html");
+    for (name, html) in [
+        ("index.html", drill_core::template::index_html(&cfg)),
+        ("download.html", drill_core::template::download_html(&cfg)),
+        ("search.html", drill_core::template::search_html(&cfg)),
+    ] {
+        let path = dist.join(name);
+        std::fs::write(&path, html).with_context(|| format!("写入失败：{}", path.display()))?;
+        println!("    {name}");
+    }
 
     // 3) 壁纸（同时方便预览效果）
     let wp = dist.join("wallpaper.png");
@@ -232,8 +233,10 @@ fn notice_text(cfg: &drill_core::Config) -> String {
 
     s.push_str("【演练流程】\n");
     s.push_str("  1. 把本目录放在演练用的专用文件夹中（不要放在家目录或系统目录下）；\n");
-    s.push_str("  2. 打开 index.html，向参演人员展示钓鱼下载页面；\n");
-    s.push_str("  3. 运行 drill-locker（macOS 双击 start-drill.command，Windows 双击 start-drill.bat）；\n");
+    s.push_str("  2. 打开 index.html，在搜索框里输入关键词（例如「chrome 下载」）并回车，\n");
+    s.push_str("     进入仿搜索结果页，点击置顶的那条「广告」结果，进入下载页；\n");
+    s.push_str("  3. 在下载页点「立即下载」；或直接运行 drill-locker\n");
+    s.push_str("     （macOS 双击 start-drill.command，Windows 双击 start-drill.bat）；\n");
     s.push_str("  4. 观察参演人员的应急响应过程。\n\n");
 
     s.push_str("【恢复流程】\n");

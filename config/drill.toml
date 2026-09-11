@@ -127,3 +127,7 @@ download_version = "v3.2.1"
 download_size = "8.4 MB"
 # 假下载量
 download_count = "1,284,937"
+
+# 搜索结果页里「广告位」链接展示的仿冒域名（纯展示，页面不联网、不会真的访问）。
+# 演练时可以把它设成与目标软件官网相似的拼写错误域名，更贴近真实钓鱼场景。
+fake_domain = "downlod-center.com"

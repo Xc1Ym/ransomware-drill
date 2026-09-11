@@ -49,8 +49,9 @@ ransom/
 │   ├── drill-webgen/          网页生成
 │   └── xtask/                 一键打包入口
 ├── web/
-│   ├── index.html             仿浏览器新标签页（钓鱼入口）
-│   └── download.html          仿软件下载站（下载演练程序）
+│   ├── index.html             仿浏览器新标签页（钓鱼入口，搜索框可输入）
+│   ├── search.html            仿搜索引擎结果页（搜索结果里的「广告」位是陷阱链接）
+│   └── download.html          仿软件下载站（点击下载得到演练程序）
 └── dist/                      打包产物（不入库，由 xtask 生成）
 ```
 
@@ -81,8 +82,14 @@ cargo run -p xtask -- sandbox
 
 1. **准备**：把 `dist/` 拷到演练机器上一个**专用文件夹**（例如桌面上的 `演练演示/`）。
    ⚠️ 不要放在家目录、桌面根目录或任何系统目录下——程序会拒绝执行。
-2. **展示钓鱼页**：双击打开 `dist/index.html`，演示参演人员是如何通过「软件下载站」拿到恶意程序的。
-3. **触发演练**：运行 `drill-locker`（macOS 双击 `start-drill.command`，Windows 双击 `start-drill.bat`）。
+2. **展示钓鱼链路**：打开 `dist/index.html`，在最上方的搜索框里输入关键词（例如 `chrome 下载`）
+   回车，进入仿搜索结果页；点击置顶的那条「广告」结果，会进入一个下载页。
+   这条链路演示的正是「搜到啥点啥 → 从仿冒站点下载 → 中招」这一最常见的中招路径。
+   - 搜浏览器类关键词时，结果页会把陷阱伪装成「浏览器官方下载」；
+     搜其它关键词时，则显示配置里 `web.download_name` 对应的软件。
+   - 陷阱链接展示的仿冒域名由 `web.fake_domain` 配置（默认 `downlod-center.com`）。
+3. **触发演练**：在下载页点「立即下载」，或直接运行 `drill-locker`
+   （macOS 双击 `start-drill.command`，Windows 双击 `start-drill.bat`）。
    程序会锁定所在目录下的文件、更换壁纸、弹出勒索窗口。
 4. **观察响应**：记录参演人员的发现时间、上报流程、处置动作。
 

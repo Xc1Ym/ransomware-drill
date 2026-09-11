@@ -7,10 +7,11 @@ use crate::config::Config;
 
 pub const INDEX_HTML: &str = include_str!("../../../web/index.html");
 pub const DOWNLOAD_HTML: &str = include_str!("../../../web/download.html");
+pub const SEARCH_HTML: &str = include_str!("../../../web/search.html");
 
 /// 把模板里的 `{{KEY}}` 替换为配置中的值。
 pub fn render(template: &str, cfg: &Config) -> String {
-    let pairs: [(&str, String); 14] = [
+    let pairs: [(&str, String); 15] = [
         ("ORG", cfg.organization.name.clone()),
         ("SHORT_NAME", cfg.organization.short_name.clone()),
         ("DRILL_CODE", cfg.organization.drill_code.clone()),
@@ -19,6 +20,7 @@ pub fn render(template: &str, cfg: &Config) -> String {
         ("VERSION", cfg.web.download_version.clone()),
         ("SIZE", cfg.web.download_size.clone()),
         ("COUNT", cfg.web.download_count.clone()),
+        ("FAKE_DOMAIN", cfg.web.fake_domain.clone()),
         ("EMAIL", cfg.popup.email.clone()),
         ("BITCOIN", cfg.popup.bitcoin.clone()),
         ("AMOUNT", cfg.popup.amount.clone()),
@@ -44,6 +46,11 @@ pub fn download_html(cfg: &Config) -> String {
     render(DOWNLOAD_HTML, cfg)
 }
 
+/// 渲染 `search.html`（仿搜索引擎结果页）。
+pub fn search_html(cfg: &Config) -> String {
+    render(SEARCH_HTML, cfg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -55,6 +62,17 @@ mod tests {
         let html = index_html(&cfg);
         assert!(!html.contains("{{ORG}}"));
         assert!(html.contains(&cfg.organization.name));
+    }
+
+    #[test]
+    fn 搜索结果页占位符全部被替换() {
+        let cfg = config::load().unwrap();
+        let html = search_html(&cfg);
+        assert!(
+            !html.contains("{{"),
+            "search.html 里存在未替换的占位符"
+        );
+        assert!(html.contains(&cfg.web.fake_domain));
     }
 
     #[test]

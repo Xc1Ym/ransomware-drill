@@ -7,7 +7,7 @@
 <style>
   /* ============================================================
      仿浏览器新标签页 —— 应急演练演示用
-     占位符 {{KEY}} 由 drill-webgen 在打包时按 config/drill.toml 替换
+     模板里的双花括号占位符由 drill-webgen 在打包时按 config/drill.toml 替换
      ============================================================ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -304,15 +304,15 @@
       <div class="inner">{{SHORT_NAME}}</div>
     </div>
 
-    <div class="searchbox">
+    <form class="searchbox" id="searchForm" autocomplete="off">
       <svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
-      <input type="text" placeholder="搜索或输入网址" readonly>
+      <input type="text" id="q" placeholder="搜索或输入网址" spellcheck="false">
       <svg class="icon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg>
-    </div>
+    </form>
 
     <div class="shortcuts">
-      <!-- 主推：软件下载入口 -->
-      <a class="shortcut primary" href="download.html">
+      <!-- 主推：软件下载入口。走搜索链路，与真实的「搜到啥点啥」行为一致 -->
+      <a class="shortcut primary" href="search.html?q={{DOWNLOAD_NAME}}">
         <div class="tile">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16 6 10h4V4h4v6h4zM5 18h14v2H5z"/></svg>
         </div>
@@ -387,6 +387,16 @@
     应急演练演示环境 · {{ORG}} · 演练编号 {{DRILL_CODE}}
   </div>
 </div>
+
+<script>
+  // 在搜索框里回车即跳转到搜索结果页，模拟真实的浏览器搜索行为。
+  document.getElementById('searchForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = document.getElementById('q').value.trim();
+    if (!q) { return; }
+    location.href = 'search.html?q=' + encodeURIComponent(q);
+  });
+</script>
 
 </body>
 </html>

@@ -71,6 +71,13 @@ pub struct WebConfig {
     pub download_version: String,
     pub download_size: String,
     pub download_count: String,
+    /// 搜索结果页「广告位」展示的仿冒域名（纯展示，不会真的访问）。
+    #[serde(default = "default_fake_domain")]
+    pub fake_domain: String,
+}
+
+fn default_fake_domain() -> String {
+    "downlod-center.com".to_string()
 }
 
 /// 解析编译期嵌入的配置，并做基本校验。

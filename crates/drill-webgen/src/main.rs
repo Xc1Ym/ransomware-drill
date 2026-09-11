@@ -40,27 +40,27 @@ fn run() -> Result<()> {
     std::fs::create_dir_all(&dir)
         .with_context(|| format!("创建输出目录失败：{}", dir.display()))?;
 
-    let index = template::index_html(&cfg);
-    let download = template::download_html(&cfg);
+    let pages = [
+        ("index.html", template::index_html(&cfg)),
+        ("download.html", template::download_html(&cfg)),
+        ("search.html", template::search_html(&cfg)),
+    ];
 
     // 渲染后不应再有未替换的占位符，出现即说明模板里写错了键名。
-    for (name, html) in [("index.html", &index), ("download.html", &download)] {
+    for (name, html) in &pages {
         if let Some(pos) = html.find("{{") {
             let snippet: String = html[pos..].chars().take(40).collect();
             anyhow::bail!("{name} 中存在未替换的占位符：{snippet}");
         }
     }
 
-    let index_path = dir.join("index.html");
-    let download_path = dir.join("download.html");
-    std::fs::write(&index_path, index)
-        .with_context(|| format!("写入失败：{}", index_path.display()))?;
-    std::fs::write(&download_path, download)
-        .with_context(|| format!("写入失败：{}", download_path.display()))?;
-
     println!("已生成网页（单位：{}）：", cfg.organization.name);
-    println!("    {}", index_path.display());
-    println!("    {}", download_path.display());
+    for (name, html) in &pages {
+        let path = dir.join(name);
+        std::fs::write(&path, html)
+            .with_context(|| format!("写入失败：{}", path.display()))?;
+        println!("    {}", path.display());
+    }
 
     Ok(())
 }

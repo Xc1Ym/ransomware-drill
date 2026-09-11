@@ -6,7 +6,8 @@
 <title>{{DOWNLOAD_NAME}} {{VERSION}} 官方下载 - 软件中心</title>
 <style>
   /* ============================================================
-     软件下载页 —— 应急演练演示用（点击下载会得到 drill-locker）
+     软件下载页 —— 应急演练演示用（点击「立即下载」会得到 drill-locker）
+     模板里的双花括号占位符由 drill-webgen 在打包时按 config/drill.toml 替换
      ============================================================ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -193,12 +194,12 @@
 <div class="wrap">
   <div class="card">
     <div class="app-head">
-      <div class="app-icon">
+      <div class="app-icon" id="appIcon">
         <svg viewBox="0 0 24 24"><path d="M12 16 6 10h4V4h4v6h4zM5 18h14v2H5z"/></svg>
       </div>
       <div class="app-meta">
-        <h1>{{DOWNLOAD_NAME}}</h1>
-        <div class="sub">系统优化 · 一键清理 · 驱动管理 · 官方正版</div>
+        <h1 id="appName">{{DOWNLOAD_NAME}}</h1>
+        <div class="sub" id="appSub">系统优化 · 一键清理 · 驱动管理 · 官方正版</div>
         <div class="facts">
           <span>版本：<b>{{VERSION}}</b></span>
           <span>大小：<b>{{SIZE}}</b></span>
@@ -220,11 +221,11 @@
 
   <div class="card section">
     <h2>软件介绍</h2>
-    <p>
+    <p id="appIntro">
       {{DOWNLOAD_NAME}} 是一款面向企业办公环境的系统优化工具，支持垃圾清理、开机加速、
       驱动检测与一键修复等功能，已服务于上万家企业用户。安装包体积小、运行稳定，兼容主流操作系统版本。
     </p>
-    <ul>
+    <ul id="appFeatures">
       <li>一键扫描并清理系统垃圾，释放磁盘空间</li>
       <li>智能检测驱动异常，自动匹配官方驱动</li>
       <li>开机项管理，显著缩短开机时间</li>
@@ -258,6 +259,39 @@
 <script>
   // 演练环境不联网：这里只做平台判断，用于选择本地目录中的对应文件。
   (function () {
+    // 从搜索结果页点过来时可能带 ?as=chrome —— 把本页伪装成浏览器官方下载页。
+    // 这正是真实攻击里最常见的「搜 A 下载、装到 B 木马」手法。
+    var as = new URLSearchParams(location.search).get('as');
+    if (as === 'chrome') {
+      document.title = 'Chrome 浏览器 官方下载 - 软件中心';
+      document.getElementById('appName').textContent = 'Chrome 浏览器';
+      document.getElementById('appSub').textContent = '极速 · 安全 · 稳定 · 官方正版';
+      document.getElementById('appIcon').innerHTML =
+        '<svg viewBox="0 0 48 48">' +
+        '<circle cx="24" cy="24" r="20" fill="#fff"/>' +
+        '<path fill="#ea4335" d="M24 4a20 20 0 0 1 17.3 10H24a10 10 0 0 0-8.7 5L8.6 9.4A20 20 0 0 1 24 4z"/>' +
+        '<path fill="#34a853" d="M8.6 9.4 15.3 19a10 10 0 0 0 3.6 13.6L11.5 43A20 20 0 0 1 8.6 9.4z"/>' +
+        '<path fill="#fbbc05" d="M41.3 14A20 20 0 0 1 11.5 43l6.7-11.6A10 10 0 0 0 32.7 24c0-1.4-.3-2.7-.8-3.9z"/>' +
+        '<circle cx="24" cy="24" r="10" fill="#fff"/>' +
+        '<circle cx="24" cy="24" r="7.6" fill="#4285f4"/>' +
+        '</svg>';
+      // 正文与特性列表也要跟着换，否则「Chrome 浏览器」下面挂着优化工具的文案会穿帮
+      document.getElementById('appIntro').textContent =
+        'Chrome 浏览器是一款快速、安全且完全免费的网络浏览器，支持多标签页浏览、扩展程序、'
+        + '隐私模式与跨设备同步等功能，全球数亿用户正在使用，兼容主流操作系统版本。';
+      document.getElementById('appFeatures').innerHTML =
+        '<li>多标签页浏览，标签之间互不影响</li>'
+        + '<li>内置隐私模式，浏览记录不留痕</li>'
+        + '<li>海量扩展程序，按需扩展浏览器能力</li>'
+        + '<li>自动更新安全补丁，拦截恶意网站</li>';
+      var shots = document.querySelectorAll('.screens div');
+      if (shots.length === 3) {
+        shots[0].textContent = '浏览器主界面';
+        shots[1].textContent = '隐私模式';
+        shots[2].textContent = '扩展管理';
+      }
+    }
+
     var ua = navigator.userAgent;
     var isWindows = /Windows/i.test(ua);
     var file = isWindows ? 'drill-locker.exe' : 'drill-locker';

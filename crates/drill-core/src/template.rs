@@ -152,6 +152,9 @@ pub fn render(template: &str, cfg: &Config) -> String {
         ("CARD_DOWNLOAD_DESC", cfg.expand(&cfg.portal.card_download_desc)),
         ("CARD_MAIL_TITLE", cfg.expand(&cfg.portal.card_mail_title)),
         ("CARD_MAIL_DESC", cfg.expand(&cfg.portal.card_mail_desc)),
+        ("RECOVERY_TITLE", cfg.expand(&cfg.portal.recovery_title)),
+        ("RECOVERY_DESC", cfg.expand(&cfg.portal.recovery_desc)),
+        ("RECOVERY_BUTTON", cfg.expand(&cfg.portal.recovery_button)),
         // ---- 仿浏览器 ----
         ("BROWSER_TAB_TITLE", cfg.expand(&cfg.browser.tab_title)),
         ("BROWSER_ADDRESS", cfg.expand(&cfg.browser.address)),

@@ -43,6 +43,9 @@ cargo run -p xtask -- package
 
 下载页会按访问者系统自动选择对应平台的程序。
 
+演练结束后，回到 `index.html` 底部点「下载恢复工具」，即可拿到对应平台的还原工具
+（也可直接用 `dist/` 里的 `drill-restorer-*`）。
+
 ## 配置
 
 `config/drill.toml` 里几乎所有会随单位、场景变化的东西都能改：

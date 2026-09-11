@@ -62,6 +62,20 @@ pub struct PortalConfig {
     pub card_download_desc: String,
     pub card_mail_title: String,
     pub card_mail_desc: String,
+    /// 主页底部恢复工具下载区的文案。
+    #[serde(default = "default_recovery_title")]
+    pub recovery_title: String,
+    #[serde(default)]
+    pub recovery_desc: String,
+    #[serde(default = "default_recovery_button")]
+    pub recovery_button: String,
+}
+
+fn default_recovery_title() -> String {
+    "演练恢复工具".to_string()
+}
+fn default_recovery_button() -> String {
+    "下载恢复工具".to_string()
 }
 
 impl Default for PortalConfig {
@@ -74,6 +88,10 @@ impl Default for PortalConfig {
                 .to_string(),
             card_mail_title: "邮件勒索".to_string(),
             card_mail_desc: "模拟员工收到一封伪装成人事通知的钓鱼邮件，点开附件后中招。".to_string(),
+            recovery_title: default_recovery_title(),
+            recovery_desc: "演练结束后运行本工具，即可把被改名的文件与桌面壁纸完整还原。"
+                .to_string(),
+            recovery_button: default_recovery_button(),
         }
     }
 }

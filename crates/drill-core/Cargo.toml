@@ -1,0 +1,21 @@
+[package]
+name = "drill-core"
+description = "勒索病毒应急演练套件核心库：配置、文件锁定/恢复、壁纸渲染、平台适配"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+image.workspace = true
+ab_glyph.workspace = true
+imageproc.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }

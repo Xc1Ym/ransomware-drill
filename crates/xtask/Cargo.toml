@@ -1,0 +1,13 @@
+[package]
+name = "xtask"
+description = "演练套件的一键打包入口"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+drill-core.workspace = true
+anyhow.workspace = true

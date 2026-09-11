@@ -1,0 +1,16 @@
+[package]
+name = "drill-locker"
+description = "勒索病毒应急演练：演练端主程序（改名 + 换壁纸 + 弹窗），不具备任何真实加密能力"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "drill-locker"
+path = "src/main.rs"
+
+[dependencies]
+drill-core.workspace = true
+anyhow.workspace = true
+eframe.workspace = true
+egui.workspace = true
+image.workspace = true

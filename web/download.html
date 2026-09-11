@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{DOWNLOAD_NAME}} {{VERSION}} 官方下载 - 软件中心</title>
+<style>
+  /* ============================================================
+     软件下载页 —— 应急演练演示用（点击下载会得到 drill-locker）
+     ============================================================ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+                 "PingFang SC", "Hiragino Sans GB", sans-serif;
+    background: #f5f7fa;
+    color: #1f2329;
+    min-height: 100vh;
+  }
+
+  a { text-decoration: none; color: inherit; }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e8ee;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 28px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .brand {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand .dot {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: linear-gradient(135deg, #1a73e8, #4b8ef7);
+  }
+  .topnav { display: flex; gap: 22px; font-size: 14px; color: #5f6368; }
+  .topnav a:hover { color: #1a73e8; }
+  .topbar .spacer { flex: 1; }
+  .topbar .back {
+    font-size: 13px; color: #5f6368;
+    border: 1px solid #dadce0; border-radius: 16px; padding: 6px 14px;
+  }
+  .topbar .back:hover { background: #f1f3f4; }
+
+  /* ---------- 主体 ---------- */
+  .wrap { max-width: 960px; margin: 28px auto; padding: 0 20px; }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    padding: 28px;
+  }
+
+  .app-head { display: flex; gap: 22px; align-items: flex-start; }
+
+  .app-icon {
+    width: 96px; height: 96px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #1a73e8, #4b8ef7);
+    display: grid; place-items: center;
+    flex: 0 0 auto;
+    box-shadow: 0 6px 16px rgba(26,115,232,.28);
+  }
+  .app-icon svg { width: 48px; height: 48px; fill: #fff; }
+
+  .app-meta { flex: 1; min-width: 0; }
+  .app-meta h1 { font-size: 24px; margin-bottom: 8px; }
+  .app-meta .sub { font-size: 13px; color: #5f6368; margin-bottom: 16px; }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 32px;
+    font-size: 13px;
+    color: #5f6368;
+  }
+  .facts b { color: #1f2329; font-weight: 600; }
+
+  .stars { color: #f9ab00; letter-spacing: 1px; }
+
+  .actions {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #1a73e8, #4b8ef7);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 42px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,115,232,.32);
+    transition: transform .1s, box-shadow .1s;
+    font-family: inherit;
+  }
+  .btn-download:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(26,115,232,.4); }
+  .btn-download svg { width: 20px; height: 20px; fill: #fff; }
+
+  .btn-plain {
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 13px 26px;
+    font-size: 14px;
+    color: #5f6368;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-plain:hover { background: #f8f9fa; }
+
+  .hint {
+    margin-top: 14px;
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+
+  /* ---------- 说明区 ---------- */
+  .section { margin-top: 20px; }
+  .section h2 {
+    font-size: 16px;
+    margin-bottom: 14px;
+    padding-left: 10px;
+    border-left: 3px solid #1a73e8;
+  }
+  .section p { font-size: 14px; line-height: 1.9; color: #3c4043; }
+  .section ul { margin: 10px 0 0 20px; font-size: 14px; line-height: 1.9; color: #3c4043; }
+
+  .screens {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .screens div {
+    height: 110px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #eef3fb, #dbe7f8);
+    display: grid; place-items: center;
+    font-size: 12px; color: #7a8ba6;
+  }
+
+  /* ---------- 演练声明 ---------- */
+  .drill-notice {
+    margin: 26px auto 40px;
+    max-width: 960px;
+    padding: 14px 20px;
+    background: #fff8e1;
+    border: 1px solid #ffe08a;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: #7a5c00;
+  }
+  .drill-notice b { color: #5d4600; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="dot"></div>软件中心</div>
+  <nav class="topnav">
+    <a href="javascript:void(0)">首页</a>
+    <a href="javascript:void(0)">办公软件</a>
+    <a href="javascript:void(0)">系统工具</a>
+    <a href="javascript:void(0)">安全防护</a>
+  </nav>
+  <div class="spacer"></div>
+  <a class="back" href="index.html">← 返回新标签页</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="app-head">
+      <div class="app-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 16 6 10h4V4h4v6h4zM5 18h14v2H5z"/></svg>
+      </div>
+      <div class="app-meta">
+        <h1>{{DOWNLOAD_NAME}}</h1>
+        <div class="sub">系统优化 · 一键清理 · 驱动管理 · 官方正版</div>
+        <div class="facts">
+          <span>版本：<b>{{VERSION}}</b></span>
+          <span>大小：<b>{{SIZE}}</b></span>
+          <span>下载量：<b>{{COUNT}}</b></span>
+          <span>评分：<span class="stars">★★★★★</span> <b>4.9</b></span>
+          <span>更新时间：<b>2026-08-18</b></span>
+        </div>
+        <div class="actions">
+          <button class="btn-download" id="downloadBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 16 6 10h4V4h4v6h4zM5 18h14v2H5z"/></svg>
+            立即下载
+          </button>
+          <button class="btn-plain" id="otherPlatformBtn">下载其他平台版本</button>
+        </div>
+        <div class="hint" id="hint">正在检测您的系统…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section">
+    <h2>软件介绍</h2>
+    <p>
+      {{DOWNLOAD_NAME}} 是一款面向企业办公环境的系统优化工具，支持垃圾清理、开机加速、
+      驱动检测与一键修复等功能，已服务于上万家企业用户。安装包体积小、运行稳定，兼容主流操作系统版本。
+    </p>
+    <ul>
+      <li>一键扫描并清理系统垃圾，释放磁盘空间</li>
+      <li>智能检测驱动异常，自动匹配官方驱动</li>
+      <li>开机项管理，显著缩短开机时间</li>
+      <li>内置安全防护模块，拦截可疑程序</li>
+    </ul>
+    <div class="screens">
+      <div>软件主界面</div>
+      <div>一键优化</div>
+      <div>驱动管理</div>
+    </div>
+  </div>
+
+  <div class="card section">
+    <h2>安装说明</h2>
+    <p>
+      1. 点击「立即下载」，等待安装包下载完成。<br>
+      2. 找到下载的 <b id="fileNameInHint">安装包</b> 文件，双击运行。<br>
+      3. 若系统提示「无法验证开发者」或安全软件拦截，请选择「仍要打开」/「允许运行」。<br>
+      4. 按提示完成安装。
+    </p>
+  </div>
+</div>
+
+<div class="drill-notice">
+  <b>【应急演练声明】</b>
+  本页面为 {{ORG}} 网络安全应急演练（编号 {{DRILL_CODE}}）的演示素材，页面内容与所下载的程序均为演练道具，
+  <b>不具备任何真实加密、破坏或传播能力</b>。程序仅会重命名文件名并临时更换桌面壁纸，不会修改或删除任何文件内容，
+  演练结束后运行配套的恢复工具即可完全还原。请勿将本页面及程序用于演练以外的任何用途。
+</div>
+
+<script>
+  // 演练环境不联网：这里只做平台判断，用于选择本地目录中的对应文件。
+  (function () {
+    var ua = navigator.userAgent;
+    var isWindows = /Windows/i.test(ua);
+    var file = isWindows ? 'drill-locker.exe' : 'drill-locker';
+    var label = isWindows ? 'Windows 版' : 'macOS 版';
+
+    document.getElementById('hint').textContent =
+      '已检测到您的系统为 ' + label + '，将下载 ' + file;
+    document.getElementById('fileNameInHint').textContent = file;
+
+    function triggerDownload(alt) {
+      var f = alt ? (isWindows ? 'drill-locker' : 'drill-locker.exe') : file;
+      var a = document.createElement('a');
+      a.href = f;
+      a.download = f;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      document.getElementById('hint').textContent =
+        '已开始下载 ' + f + '，请在下载目录中双击运行。';
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', function () {
+      triggerDownload(false);
+    });
+    document.getElementById('otherPlatformBtn').addEventListener('click', function () {
+      triggerDownload(true);
+    });
+  })();
+</script>
+
+</body>
+</html>

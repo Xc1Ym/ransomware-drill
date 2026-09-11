@@ -1,0 +1,13 @@
+[package]
+name = "drill-restorer"
+description = "勒索病毒应急演练：恢复工具（还原文件后缀与桌面壁纸）"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "drill-restorer"
+path = "src/main.rs"
+
+[dependencies]
+drill-core.workspace = true
+anyhow.workspace = true

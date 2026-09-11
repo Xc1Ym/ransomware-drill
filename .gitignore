@@ -1,0 +1,11 @@
+/target
+/dist
+**/*.rs.bk
+.DS_Store
+Thumbs.db
+
+# 演练运行时产物，不应入库
+/drill-sandbox
+manifest.json
+*.drill_locked
+wallpaper-drill.png

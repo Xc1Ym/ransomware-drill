@@ -1,0 +1,13 @@
+[package]
+name = "drill-webgen"
+description = "把 web/ 下的 HTML 模板按配置渲染成演练用的页面"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "drill-webgen"
+path = "src/main.rs"
+
+[dependencies]
+drill-core.workspace = true
+anyhow.workspace = true

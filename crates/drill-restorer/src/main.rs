@@ -174,6 +174,12 @@ fn run() -> Result<()> {
     println!();
     println!("---------------- 恢复结果 ----------------");
     println!("已还原文件：{} 个", report.restored);
+    if report.notes_removed > 0 {
+        println!("已清除勒索信：{} 封", report.notes_removed);
+    }
+    if let Some(e) = &report.note_error {
+        println!("勒索信清理失败：{e}");
+    }
     if !report.missing.is_empty() {
         println!("manifest 中登记但未找到：{} 个", report.missing.len());
         for p in report.missing.iter().take(10) {

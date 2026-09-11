@@ -22,7 +22,14 @@ image = "0.25"
 ab_glyph = "0.2"
 imageproc = "0.27"
 egui = "0.36"
-eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow"] }
+# x11 / wayland 是 Linux 后端的开关：在 macOS 与 Windows 上不生效，
+# 但交叉编译 Linux 版时必须打开，否则 winit 会因为「没有可用后端」直接编译失败。
+eframe = { version = "0.36", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "x11",
+    "wayland",
+] }
 drill-core = { path = "crates/drill-core" }
 
 [profile.release]

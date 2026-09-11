@@ -165,7 +165,7 @@ fn run() -> Result<()> {
         let planned = drill_core::walk::collect_files(
             &root,
             cfg.lock.recursive,
-            &cfg.lock.exclude,
+            &cfg.effective_exclude(),
             &cfg.lock.extension,
         )?;
         println!("[预览] 共发现 {} 个文件将被重命名：", planned.len());
@@ -189,6 +189,12 @@ fn run() -> Result<()> {
         for (p, why) in report.failed.iter().take(5) {
             println!("    {} —— {}", p.display(), why);
         }
+    }
+    if report.notes_written > 0 {
+        println!(
+            "[完成] 已在 {} 个目录投放勒索信：{}",
+            report.notes_written, cfg.ransom_note.filename
+        );
     }
     if let Some(m) = &report.manifest_path {
         println!("[完成] 恢复清单已写入：{}", m.display());

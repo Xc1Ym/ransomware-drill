@@ -17,3 +17,17 @@
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
 ar = "x86_64-w64-mingw32-ar"
+
+# Linux 交叉编译需要 messense/macos-cross-toolchains 提供的工具链：
+#     brew tap messense/macos-cross-toolchains
+#     brew install x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+# 再执行 rustup target add 对应目标即可。
+# 这类工具链自带目标平台的 libc 与 X11 开发文件；egui 所需的 X11/OpenGL
+# 在 Linux 上是运行时 dlopen 加载的，因此编译期不需要额外的图形库。
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-unknown-linux-gnu-gcc"
+ar = "x86_64-unknown-linux-gnu-ar"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-unknown-linux-gnu-gcc"
+ar = "aarch64-unknown-linux-gnu-ar"

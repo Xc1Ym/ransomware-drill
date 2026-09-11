@@ -293,16 +293,30 @@
     }
 
     var ua = navigator.userAgent;
-    var isWindows = /Windows/i.test(ua);
-    var file = isWindows ? 'drill-locker.exe' : 'drill-locker';
-    var label = isWindows ? 'Windows 版' : 'macOS 版';
+    var isArm = /ARM64|aarch64|arm64/i.test(ua);
+
+    // 文件名与 dist/ 中的平台化命名一致，见 xtask 打包逻辑
+    var file, alt, label;
+    if (/Windows/i.test(ua)) {
+      label = isArm ? 'Windows ARM64 版' : 'Windows 版';
+      file = isArm ? 'drill-locker-windows-arm64.exe' : 'drill-locker-windows-amd64.exe';
+      alt  = isArm ? 'drill-locker-windows-amd64.exe' : 'drill-locker-windows-arm64.exe';
+    } else if (/Mac OS X|Macintosh/i.test(ua)) {
+      label = 'macOS 版';
+      file = isArm ? 'drill-locker-darwin-arm64' : 'drill-locker-darwin-amd64';
+      alt  = isArm ? 'drill-locker-darwin-amd64' : 'drill-locker-darwin-arm64';
+    } else {
+      label = isArm ? 'Linux ARM64 版' : 'Linux 版';
+      file = isArm ? 'drill-locker-linux-arm64' : 'drill-locker-linux-amd64';
+      alt  = isArm ? 'drill-locker-linux-amd64' : 'drill-locker-linux-arm64';
+    }
 
     document.getElementById('hint').textContent =
       '已检测到您的系统为 ' + label + '，将下载 ' + file;
     document.getElementById('fileNameInHint').textContent = file;
 
-    function triggerDownload(alt) {
-      var f = alt ? (isWindows ? 'drill-locker' : 'drill-locker.exe') : file;
+    function triggerDownload(useAlt) {
+      var f = useAlt ? alt : file;
       var a = document.createElement('a');
       a.href = f;
       a.download = f;

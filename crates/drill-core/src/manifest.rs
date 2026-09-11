@@ -28,6 +28,10 @@ pub struct Manifest {
     pub suffix: String,
     /// 锁定前的桌面壁纸路径，恢复时用于还原。
     pub original_wallpaper: Option<PathBuf>,
+    /// 本次演练投放的勒索信路径，恢复时一并清除。
+    /// 老版本 manifest 没有这个字段，因此允许缺省。
+    #[serde(default)]
+    pub notes: Vec<PathBuf>,
     pub entries: Vec<Entry>,
 }
 
@@ -56,6 +60,7 @@ impl Manifest {
             root,
             suffix,
             original_wallpaper,
+            notes: Vec::new(),
             entries: Vec::new(),
         }
     }

@@ -19,6 +19,35 @@ pub struct Config {
     pub wallpaper: WallpaperConfig,
     pub popup: PopupConfig,
     pub web: WebConfig,
+    /// 勒索信配置。旧版本配置文件里没有这一段，因此允许缺省。
+    #[serde(default)]
+    pub ransom_note: RansomNoteConfig,
+}
+
+/// 勒索信：在每个被锁定的目录里投放一份说明文件。
+///
+/// 这是勒索软件的标志性特征，也是演练中参演人员最直接的「发现点」。
+#[derive(Debug, Clone, Deserialize)]
+pub struct RansomNoteConfig {
+    pub enabled: bool,
+    /// 勒索信文件名。
+    pub filename: String,
+    /// 「个人识别码」的前缀，用于演练复盘时对位。
+    pub id_prefix: String,
+    /// 正文；留空则复用弹窗正文。
+    #[serde(default)]
+    pub body: String,
+}
+
+impl Default for RansomNoteConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            filename: "如何恢复你的文件.txt".to_string(),
+            id_prefix: "WNCRY".to_string(),
+            body: String::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -109,7 +138,39 @@ impl Config {
         if self.organization.name.trim().is_empty() {
             bail!("organization.name 不能为空，请先填写演练单位名称");
         }
+        if self.ransom_note.enabled && self.ransom_note.filename.trim().is_empty() {
+            bail!("ransom_note.filename 不能为空");
+        }
         Ok(())
+    }
+
+    /// 遍历时要跳过的名字：配置里的 `lock.exclude`，再加上演练自己产生的文件。
+    ///
+    /// 必须排除勒索信，否则重复运行演练时它会被当成普通文件再锁一遍。
+    pub fn effective_exclude(&self) -> Vec<String> {
+        let mut v = self.lock.exclude.clone();
+        if self.ransom_note.enabled {
+            let f = self.ransom_note.filename.trim();
+            if !f.is_empty() && !v.iter().any(|x| x == f) {
+                v.push(f.to_string());
+            }
+        }
+        v
+    }
+
+    /// 勒索信的正文：优先用专属配置，否则复用弹窗正文。
+    pub fn note_body(&self) -> String {
+        let raw = if self.ransom_note.body.trim().is_empty() {
+            self.popup.body.trim()
+        } else {
+            self.ransom_note.body.trim()
+        };
+        let mut body = self.expand(raw);
+        if self.popup.show_drill_disclaimer && !self.popup.disclaimer.trim().is_empty() {
+            body.push_str("\n\n");
+            body.push_str(self.expand(self.popup.disclaimer.trim()).as_str());
+        }
+        body
     }
 
     /// 展开文案中的占位符，如 `{org}`、`{amount}`。

@@ -7,7 +7,7 @@
 
 use crate::manifest::Manifest;
 use crate::platform;
-use crate::{config::Config, walk};
+use crate::{config::Config, note, walk};
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 
@@ -23,6 +23,9 @@ pub struct RestoreReport {
     pub manifest_path: Option<PathBuf>,
     pub wallpaper_restored: Option<PathBuf>,
     pub wallpaper_error: Option<String>,
+    /// 已清除的勒索信数量。
+    pub notes_removed: usize,
+    pub note_error: Option<String>,
     pub dry_run: bool,
 }
 
@@ -48,8 +51,14 @@ pub fn restore_dir(root: &Path, cfg: &Config, dry_run: bool) -> Result<RestoreRe
                         Err(e) => report.wallpaper_error = Some(e.to_string()),
                     }
                 }
+                // 清除演练自己投放的勒索信（唯一会删除文件的一步）
+                match note::remove_notes(&m.notes, cfg) {
+                    Ok(n) => report.notes_removed = n,
+                    Err(e) => report.note_error = Some(e.to_string()),
+                }
             } else {
                 report.wallpaper_restored = m.original_wallpaper.clone();
+                report.notes_removed = m.notes.iter().filter(|p| p.is_file()).count();
             }
 
             m.entries

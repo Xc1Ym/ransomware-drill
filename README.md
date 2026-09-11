@@ -183,28 +183,46 @@ cargo run -p xtask -- sandbox
 
 ## 跨平台注意事项
 
-### 打包出的 dist/ 是双平台通用的
+### 打包出的 dist/ 是五平台通用的
 
-`cargo run -p xtask -- package` 会同时产出两个平台的二进制：
+`cargo run -p xtask -- package` 会尽可能多地构建各个平台，产物用平台后缀区分：
 
 | 文件 | 平台 |
 |---|---|
-| `drill-locker` / `drill-restorer` | macOS |
-| `drill-locker.exe` / `drill-restorer.exe` | Windows x86_64 |
-| `start-drill.command` / `restore.command` | macOS 双击运行 |
-| `start-drill.bat` / `restore.bat` | Windows 双击运行 |
+| `drill-locker-darwin-arm64` | macOS（Apple Silicon） |
+| `drill-locker-windows-amd64.exe` | Windows x86_64 |
+| `drill-locker-windows-arm64.exe` | Windows on ARM |
+| `drill-locker-linux-amd64` | Linux x86_64 |
+| `drill-locker-linux-arm64` | Linux arm64 |
+
+`drill-restorer-*` 同理。启动脚本 `start-drill.command` / `.bat` / `.sh`
+（以及对应的 `restore.*`）会自动判断机器架构，挑选合适的那份二进制。
 
 整个 `dist/` 目录拷到哪台机器都能直接用，下载页也会按访问者的系统自动指向对应文件。
 
-在 macOS 上交叉编译 Windows 版本需要 mingw-w64 提供链接器：
+### 交叉编译工具链
+
+在 macOS 上构建其它平台需要额外装工具链。**缺哪个就跳过哪个**，不影响本机与其他平台打包，
+只是对应平台的机器上会没有可用的程序。
 
 ```bash
+# Windows x86_64
 brew install mingw-w64
+
+# Linux amd64 / arm64
+brew tap messense/macos-cross-toolchains
+brew install x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+
+# Windows arm64（llvm-mingw，从 GitHub 下载后解压即可）
+# https://github.com/mstorsjo/llvm-mingw/releases
+export LLVM_MINGW_BIN=/path/to/llvm-mingw-<版本>-ucrt-macos-universal
+rustup target add aarch64-pc-windows-gnullvm
 ```
 
-没装也不影响打包——只是会跳过 Windows 版本并给出提示，届时 Windows 机器上点下载会拿到 404。
+`LLVM_MINGW_BIN` 只是让 `xtask` 找到 arm64 的链接器，不设置就跳过该平台。
 
-> 注意：交叉编译只能用 `x86_64-pc-windows-gnu` 目标，MSVC 目标无法在 macOS 上构建。
+> 注意：Windows 目标必须用 gnu/gnullvm 变体，MSVC 目标无法在 macOS 上交叉编译。
 
 ### macOS
 

@@ -6,7 +6,8 @@
 //! 实际上只是给文件名追加一个后缀（[`lock`]），存在以下硬性保证：
 //!
 //! - **不读写文件内容**：只调用 `std::fs::rename`，文件内容一个字节都不会变；
-//! - **不删除任何文件**：代码中不存在删除文件的路径；
+//! - **唯一的删除操作**是清除演练自己投放的勒索信（[`note::remove_notes`]），
+//!   且只删 manifest 中登记过、文件名与配置完全一致的路径，不会碰任何用户文件；
 //! - **不加密、不联网**：无任何加解密与网络代码；
 //! - **全流程可逆**：执行前必须先落盘 manifest，再执行重命名，
 //!   配套的 `drill-restorer` 可 100% 还原文件后缀与桌面壁纸；
@@ -16,6 +17,7 @@ pub mod config;
 pub mod fonts;
 pub mod lock;
 pub mod manifest;
+pub mod note;
 pub mod platform;
 pub mod restore;
 pub mod safety;

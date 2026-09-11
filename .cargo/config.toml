@@ -1,0 +1,19 @@
+# ==============================================================================
+#  交叉编译配置
+# ==============================================================================
+#  在 macOS / Linux 上构建 Windows 版本的演练程序时，需要 mingw-w64 提供链接器：
+#
+#      macOS :  brew install mingw-w64
+#      Debian:  sudo apt install gcc-mingw-w64-x86-64
+#
+#  然后执行：
+#      cargo build --release --target x86_64-pc-windows-gnu
+#
+#  本文件只对 windows-gnu 这一个目标生效，不影响本机构建。
+#  注意：用 MSVC 目标（x86_64-pc-windows-msvc）无法在 macOS 上交叉编译，
+#  必须使用 gnu 目标。
+# ==============================================================================
+
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"

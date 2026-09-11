@@ -183,6 +183,29 @@ cargo run -p xtask -- sandbox
 
 ## 跨平台注意事项
 
+### 打包出的 dist/ 是双平台通用的
+
+`cargo run -p xtask -- package` 会同时产出两个平台的二进制：
+
+| 文件 | 平台 |
+|---|---|
+| `drill-locker` / `drill-restorer` | macOS |
+| `drill-locker.exe` / `drill-restorer.exe` | Windows x86_64 |
+| `start-drill.command` / `restore.command` | macOS 双击运行 |
+| `start-drill.bat` / `restore.bat` | Windows 双击运行 |
+
+整个 `dist/` 目录拷到哪台机器都能直接用，下载页也会按访问者的系统自动指向对应文件。
+
+在 macOS 上交叉编译 Windows 版本需要 mingw-w64 提供链接器：
+
+```bash
+brew install mingw-w64
+```
+
+没装也不影响打包——只是会跳过 Windows 版本并给出提示，届时 Windows 机器上点下载会拿到 404。
+
+> 注意：交叉编译只能用 `x86_64-pc-windows-gnu` 目标，MSVC 目标无法在 macOS 上构建。
+
 ### macOS
 
 - **首次换壁纸需要授权**：系统会弹出「允许控制『系统事件』吗？」，必须点「好」。
@@ -232,6 +255,20 @@ cargo run -p xtask -- sandbox
 
 在 `config/drill.toml` 中把 `wallpaper.drill_notice` 设为 `"应急演练"`，重新编译即可。
 弹窗正文末尾默认也会附上一句演练声明（由 `popup.show_drill_disclaimer` 控制）。
+
+**Q：Windows 上点「立即下载」没反应，或者下载页报 404？**
+
+说明 `dist/` 里没有 `drill-locker.exe`。下载页会按访问者的系统选择文件，
+如果打包时跳过了 Windows 版本（缺少 mingw-w64），Windows 用户就会拿到 404。
+
+解决办法：在打包机上装好 mingw-w64 后重新打包。
+
+```bash
+brew install mingw-w64            # macOS
+cargo run -p xtask -- package
+```
+
+打包完成后确认 `dist/` 里同时存在 `drill-locker` 和 `drill-locker.exe`。
 
 ---
 

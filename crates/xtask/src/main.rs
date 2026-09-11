@@ -18,7 +18,8 @@ const HELP: &str = r#"xtask —— 勒索病毒应急演练套件打包工具
 
 命令：
     build        编译 release 版本的 drill-locker 与 drill-restorer
-    package      完整打包：编译 + 渲染网页 + 生成壁纸 + 组装 dist/
+    package      完整打包：编译（本机 + 交叉编译 Windows）+ 渲染网页
+                 + 生成壁纸 + 组装 dist/
     sandbox      在 target/drill-sandbox 下造一批测试样本文件
     wallpaper    只生成一张壁纸到 dist/wallpaper.png，方便预览
     help         显示本帮助
@@ -70,16 +71,74 @@ fn run() -> Result<()> {
 }
 
 fn build_release() -> Result<()> {
-    println!("==> 编译 release 版本…");
-    let status = Command::new(env!("CARGO"))
-        .args(["build", "--release"])
+    build_target(None)
+}
+
+/// 编译 release 版本；`target` 为 `None` 时编译本机版本。
+fn build_target(target: Option<&str>) -> Result<()> {
+    match target {
+        Some(t) => println!("==> 编译 release 版本（交叉编译到 {t}）…"),
+        None => println!("==> 编译 release 版本（本机）…"),
+    }
+
+    let mut cmd = Command::new(env!("CARGO"));
+    cmd.args(["build", "--release"]);
+    if let Some(t) = target {
+        cmd.args(["--target", t]);
+    }
+
+    let status = cmd
         .current_dir(workspace_root())
         .status()
         .context("执行 cargo build 失败，请确认 cargo 在 PATH 中")?;
+
     if !status.success() {
-        bail!("cargo build --release 失败");
+        match target {
+            Some(t) => bail!("cargo build --release --target {t} 失败"),
+            None => bail!("cargo build --release 失败"),
+        }
     }
     Ok(())
+}
+
+/// release 产物所在目录。
+fn release_dir(target: Option<&str>) -> PathBuf {
+    let root = workspace_root().join("target");
+    match target {
+        None => root.join("release"),
+        Some(t) => root.join(t).join("release"),
+    }
+}
+
+/// 一个构建目标。
+struct BuildTarget {
+    /// cargo 的 target 三元组；`None` 表示本机。
+    triple: Option<&'static str>,
+    /// 可执行文件后缀。
+    exe_suffix: &'static str,
+    label: &'static str,
+}
+
+/// 打包时要构建的目标清单。
+///
+/// 本机之外还会尝试交叉编译一份 Windows 版本，这样 `dist/` 是双平台通用的，
+/// 拷到哪种机器上都能直接用。工具链缺失时会跳过并给出提示，不影响本机打包。
+fn build_targets() -> Vec<BuildTarget> {
+    let mut v = vec![BuildTarget {
+        triple: None,
+        exe_suffix: std::env::consts::EXE_SUFFIX,
+        label: "本机",
+    }];
+
+    if !cfg!(windows) {
+        v.push(BuildTarget {
+            triple: Some("x86_64-pc-windows-gnu"),
+            exe_suffix: ".exe",
+            label: "Windows x86_64",
+        });
+    }
+
+    v
 }
 
 /// 组装可直接拷贝到演练机器使用的 `dist/` 目录。
@@ -88,7 +147,25 @@ fn package() -> Result<()> {
     let cfg = drill_core::config::load()?;
     let dist = root.join("dist");
 
-    build_release()?;
+    // 先编译：本机编译必须成功；Windows 交叉编译失败只警告，不影响本机打包。
+    let mut built: Vec<BuildTarget> = Vec::new();
+    for t in build_targets() {
+        match build_target(t.triple) {
+            Ok(()) => built.push(t),
+            Err(e) => {
+                if t.triple.is_none() {
+                    return Err(e);
+                }
+                println!();
+                println!("[警告] 跳过 {} 版本：{e}", t.label);
+                println!("        该平台机器将无法运行演练程序。");
+                println!("        如需一并打包，请先安装 mingw-w64：");
+                println!("            macOS : brew install mingw-w64");
+                println!("            Debian: sudo apt install gcc-mingw-w64-x86-64");
+                println!();
+            }
+        }
+    }
 
     println!("==> 组装 dist/ …");
     if dist.exists() {
@@ -97,19 +174,20 @@ fn package() -> Result<()> {
     }
     std::fs::create_dir_all(&dist)?;
 
-    // 1) 二进制
-    let release = root.join("target/release");
-    let suffix = std::env::consts::EXE_SUFFIX;
-    for name in ["drill-locker", "drill-restorer"] {
-        let file = format!("{name}{suffix}");
-        let src = release.join(&file);
-        if !src.is_file() {
-            bail!("找不到编译产物 {}，请先运行 cargo run -p xtask -- build", src.display());
+    // 1) 二进制：每个成功编译的平台各放一份
+    for t in &built {
+        let release = release_dir(t.triple);
+        for name in ["drill-locker", "drill-restorer"] {
+            let file = format!("{name}{}", t.exe_suffix);
+            let src = release.join(&file);
+            if !src.is_file() {
+                bail!("找不到编译产物 {}", src.display());
+            }
+            let dst = dist.join(&file);
+            std::fs::copy(&src, &dst)
+                .with_context(|| format!("复制失败：{}", dst.display()))?;
+            println!("    {file}    [{}]", t.label);
         }
-        let dst = dist.join(&file);
-        std::fs::copy(&src, &dst)
-            .with_context(|| format!("复制失败：{}", dst.display()))?;
-        println!("    {file}");
     }
 
     // 2) 网页
@@ -158,8 +236,12 @@ fn make_executable(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// 生成两类启动脚本。
+///
+/// 刻意不按构建主机裁剪：打包出的 `dist/` 要能同时给 macOS 和 Windows 用，
+/// 所以在哪个平台打包都生成两套脚本。
 fn write_launchers(dist: &Path) -> Result<()> {
-    #[cfg(unix)]
+    // ---------- macOS / Linux ----------
     {
         let start = dist.join("start-drill.command");
         std::fs::write(
@@ -171,6 +253,7 @@ fn write_launchers(dist: &Path) -> Result<()> {
              echo\n\
              read -n 1 -s -r -p \"按任意键关闭此窗口…\"\n",
         )?;
+        #[cfg(unix)]
         make_executable(&start)?;
 
         let restore = dist.join("restore.command");
@@ -183,10 +266,11 @@ fn write_launchers(dist: &Path) -> Result<()> {
              echo\n\
              read -n 1 -s -r -p \"按任意键关闭此窗口…\"\n",
         )?;
+        #[cfg(unix)]
         make_executable(&restore)?;
     }
 
-    #[cfg(windows)]
+    // ---------- Windows ----------
     {
         let start = dist.join("start-drill.bat");
         std::fs::write(
@@ -213,7 +297,7 @@ fn write_launchers(dist: &Path) -> Result<()> {
         )?;
     }
 
-    println!("    start-drill / restore 启动脚本");
+    println!("    start-drill / restore 启动脚本（macOS 用 .command，Windows 用 .bat）");
     Ok(())
 }
 
@@ -230,6 +314,13 @@ fn notice_text(cfg: &drill_core::Config) -> String {
     s.push_str("  2. 把桌面壁纸换成黑底红字的提示图；\n");
     s.push_str("  3. 弹出一个仿冒的勒索窗口（不联网、不驻留）。\n");
     s.push_str("所有改动都是可逆的，请勿用于演练以外的任何用途。\n\n");
+
+    s.push_str("【本目录内容】\n");
+    s.push_str("  drill-locker / drill-locker.exe           演练程序（macOS / Windows 各一份）\n");
+    s.push_str("  drill-restorer / drill-restorer.exe       恢复工具（两个平台各一份）\n");
+    s.push_str("  index.html / search.html / download.html  仿冒的浏览器与搜索页面\n");
+    s.push_str("  start-drill / restore                     双击即可执行或恢复的启动脚本\n");
+    s.push_str("  wallpaper.png                             演练用的桌面壁纸\n\n");
 
     s.push_str("【演练流程】\n");
     s.push_str("  1. 把本目录放在演练用的专用文件夹中（不要放在家目录或系统目录下）；\n");

@@ -22,6 +22,70 @@ pub struct Config {
     /// 勒索信配置。旧版本配置文件里没有这一段，因此允许缺省。
     #[serde(default)]
     pub ransom_note: RansomNoteConfig,
+    /// 演练入口页（选择场景）。
+    #[serde(default)]
+    pub portal: PortalConfig,
+    /// 钓鱼邮件（仿邮箱场景）。
+    #[serde(default)]
+    pub mail: MailConfig,
+}
+
+/// 演练入口页：让参演者选择走哪条「中招路径」。
+#[derive(Debug, Clone, Deserialize)]
+pub struct PortalConfig {
+    /// 主页大标题，支持 `{org}` 占位符。
+    pub title: String,
+    pub subtitle: String,
+    pub card_download_title: String,
+    pub card_download_desc: String,
+    pub card_mail_title: String,
+    pub card_mail_desc: String,
+}
+
+impl Default for PortalConfig {
+    fn default() -> Self {
+        Self {
+            title: "{org}勒索病毒应急演练".to_string(),
+            subtitle: "请选择演练场景".to_string(),
+            card_download_title: "文件下载勒索".to_string(),
+            card_download_desc: "模拟员工从搜索结果进入仿冒下载站，下载并运行看似正常的程序，实际中招。"
+                .to_string(),
+            card_mail_title: "邮件勒索".to_string(),
+            card_mail_desc: "模拟员工收到一封伪装成人事通知的钓鱼邮件，点开附件后中招。".to_string(),
+        }
+    }
+}
+
+/// 钓鱼邮件的内容。
+#[derive(Debug, Clone, Deserialize)]
+pub struct MailConfig {
+    /// 邮箱页右上角显示的收件人。
+    pub owner: String,
+    pub owner_email: String,
+    pub subject: String,
+    pub sender_name: String,
+    pub sender_email: String,
+    pub time: String,
+    /// 附件显示名。推荐用双扩展名（如 `表格.xlsx.exe`），这是真实钓鱼的常见手法。
+    pub attachment: String,
+    pub attachment_size: String,
+    pub body: String,
+}
+
+impl Default for MailConfig {
+    fn default() -> Self {
+        Self {
+            owner: "张三".to_string(),
+            owner_email: "zhangsan@example.com".to_string(),
+            subject: "【人事部】2026年度工资调整明细表，请查收".to_string(),
+            sender_name: "人事部-王经理".to_string(),
+            sender_email: "hr@example-corp.com".to_string(),
+            time: "今天 09:24".to_string(),
+            attachment: "2026年度工资调整明细表.xlsx.exe".to_string(),
+            attachment_size: "8.4 MB".to_string(),
+            body: "各位同事：\n\n请查收附件并核对个人信息。\n\n人事部".to_string(),
+        }
+    }
 }
 
 /// 勒索信：在每个被锁定的目录里投放一份说明文件。

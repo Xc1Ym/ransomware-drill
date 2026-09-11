@@ -302,9 +302,11 @@
       file = isArm ? 'drill-locker-windows-arm64.exe' : 'drill-locker-windows-amd64.exe';
       alt  = isArm ? 'drill-locker-windows-amd64.exe' : 'drill-locker-windows-arm64.exe';
     } else if (/Mac OS X|Macintosh/i.test(ua)) {
+      // macOS 只提供 Apple Silicon 版。注意 Rosetta 只能让 Apple Silicon 跑 x86 程序，
+      // 反过来不行，所以不再按 UA 猜 amd64——那会让 Intel Mac 拿到一个 404。
       label = 'macOS 版';
-      file = isArm ? 'drill-locker-darwin-arm64' : 'drill-locker-darwin-amd64';
-      alt  = isArm ? 'drill-locker-darwin-amd64' : 'drill-locker-darwin-arm64';
+      file = 'drill-locker-darwin-arm64';
+      alt  = 'drill-locker-windows-amd64.exe';
     } else {
       label = isArm ? 'Linux ARM64 版' : 'Linux 版';
       file = isArm ? 'drill-locker-linux-arm64' : 'drill-locker-linux-amd64';

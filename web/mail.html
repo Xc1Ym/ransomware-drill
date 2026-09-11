@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QQ邮箱</title>
+<style>
+  /* ============================================================
+     仿 Web 邮箱 —— 应急演练演示用（钓鱼邮件场景）
+     模板里的双花括号占位符由 drill-webgen 在打包时按 config/drill.toml 替换
+     页面完全本地运行，不联网、不发送任何邮件、不发起任何真实请求。
+     ============================================================ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+                 "PingFang SC", "Hiragino Sans GB", sans-serif;
+    background: #f2f4f7;
+    color: #1f2329;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  a { text-decoration: none; color: inherit; }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar {
+    height: 56px;
+    background: linear-gradient(90deg, #12b7f5, #2a9df4);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 0 20px;
+    flex: 0 0 auto;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    z-index: 5;
+  }
+
+  .topbar .logo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    flex: 0 0 auto;
+  }
+  .topbar .logo .envelope {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: rgba(255,255,255,.22);
+    display: grid; place-items: center;
+  }
+  .topbar .logo .envelope svg { width: 17px; height: 17px; fill: #fff; }
+
+  .topbar .search {
+    flex: 0 1 420px;
+    height: 34px;
+    background: rgba(255,255,255,.92);
+    border-radius: 17px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 15px;
+    color: #9aa4b2;
+    font-size: 13px;
+  }
+  .topbar .search svg { width: 16px; height: 16px; fill: #9aa4b2; flex: 0 0 auto; }
+
+  .topbar .spacer { flex: 1; }
+
+  .topbar .user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+  .topbar .user .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.28);
+    display: grid; place-items: center;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* ---------- 主体三栏 ---------- */
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* 左侧导航 */
+  .sidebar {
+    width: 178px;
+    flex: 0 0 auto;
+    background: #fff;
+    border-right: 1px solid #e6e9ee;
+    padding: 14px 0;
+    overflow-y: auto;
+  }
+  .compose {
+    margin: 0 14px 14px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #12b7f5, #2a9df4);
+    color: #fff;
+    display: grid; place-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: default;
+  }
+  .nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    color: #4a5561;
+    border-left: 3px solid transparent;
+  }
+  .nav a:hover { background: #f5f8fc; }
+  .nav a.active {
+    background: #e8f4fe;
+    border-left-color: #12b7f5;
+    color: #12b7f5;
+    font-weight: 600;
+  }
+  .nav a .badge {
+    margin-left: auto;
+    background: #ff5b5b;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 9px;
+    font-weight: 600;
+  }
+  .nav .group {
+    margin: 14px 20px 6px;
+    font-size: 11.5px;
+    color: #a3adb9;
+    letter-spacing: 1px;
+  }
+
+  /* 中间邮件列表 */
+  .list {
+    width: 342px;
+    flex: 0 0 auto;
+    background: #fff;
+    border-right: 1px solid #e6e9ee;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .list .head {
+    height: 42px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    border-bottom: 1px solid #eef1f5;
+    font-size: 13px;
+    color: #8a94a1;
+  }
+  .list .head b { color: #1f2329; font-size: 14px; }
+
+  .list .items { flex: 1; overflow-y: auto; }
+
+  .item {
+    padding: 13px 16px;
+    border-bottom: 1px solid #f2f4f7;
+    cursor: pointer;
+    display: block;
+  }
+  .item:hover { background: #f7fafd; }
+  .item.active { background: #eaf5fe; }
+
+  .item .row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .item .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #12b7f5;
+    flex: 0 0 auto;
+  }
+  .item .dot.hidden { visibility: hidden; }
+  .item .from {
+    font-size: 13.5px;
+    color: #4a5561;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item .time { font-size: 11.5px; color: #a3adb9; flex: 0 0 auto; }
+
+  .item .subject {
+    font-size: 13.5px;
+    color: #4a5561;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .item .preview {
+    font-size: 12px;
+    color: #a3adb9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item.unread .from,
+  .item.unread .subject { color: #1f2329; font-weight: 600; }
+
+  /* 右侧详情 */
+  .detail {
+    flex: 1;
+    background: #fff;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .detail .subject {
+    padding: 22px 30px 14px;
+    font-size: 19px;
+    font-weight: 600;
+    color: #16233a;
+    border-bottom: 1px solid #eef1f5;
+  }
+
+  .detail .meta {
+    padding: 14px 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #eef1f5;
+  }
+  .detail .meta .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #12b7f5, #4b8ef7);
+    color: #fff;
+    display: grid; place-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    flex: 0 0 auto;
+  }
+  .detail .meta .who { line-height: 1.5; }
+  .detail .meta .who .name { font-size: 14px; font-weight: 600; }
+  .detail .meta .who .addr { font-size: 12.5px; color: #8a94a1; }
+  .detail .meta .when { margin-left: auto; font-size: 12.5px; color: #8a94a1; }
+
+  .detail .body {
+    padding: 24px 30px;
+    flex: 1;
+    font-size: 14px;
+    line-height: 2;
+    color: #2b3543;
+    white-space: pre-wrap;
+  }
+
+  .detail .attach {
+    margin: 0 30px 30px;
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fafcff;
+  }
+  .detail .attach .label {
+    font-size: 12.5px;
+    color: #8a94a1;
+    margin-bottom: 10px;
+  }
+  .detail .attach .file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .detail .attach .file:hover {
+    border-color: #12b7f5;
+    box-shadow: 0 3px 12px rgba(18,183,245,.16);
+  }
+  .detail .attach .file .fico {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #34a853, #4caf50);
+    display: grid; place-items: center;
+    flex: 0 0 auto;
+  }
+  .detail .attach .file .fico svg { width: 20px; height: 20px; fill: #fff; }
+  .detail .attach .file .fname { font-size: 13.5px; font-weight: 600; color: #1f2329; }
+  .detail .attach .file .fsize { font-size: 12px; color: #a3adb9; margin-top: 2px; }
+  .detail .attach .file .dl {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: #12b7f5;
+    font-weight: 600;
+    flex: 0 0 auto;
+  }
+
+  .detail .empty {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    color: #b6bfc9;
+    font-size: 13.5px;
+  }
+
+  /* 普通邮件（装饰）的详情样式 */
+  .plain-tip {
+    margin: 0 30px 30px;
+    font-size: 12.5px;
+    color: #a3adb9;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <span class="envelope">
+      <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z"/></svg>
+    </span>
+    QQ邮箱
+  </div>
+  <div class="search">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+    搜索邮件
+  </div>
+  <div class="spacer"></div>
+  <div class="user">
+    <span class="avatar">{{SHORT_NAME}}</span>
+    <span>{{MAIL_OWNER}} &lt;{{MAIL_OWNER_EMAIL}}&gt;</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="compose">写 信</div>
+    <nav class="nav">
+      <a class="active" href="javascript:void(0)">收件箱 <span class="badge">1</span></a>
+      <a href="javascript:void(0)">星标邮件</a>
+      <a href="javascript:void(0)">群邮件</a>
+      <a href="javascript:void(0)">草稿箱</a>
+      <a href="javascript:void(0)">已发送</a>
+      <a href="javascript:void(0)">已删除</a>
+      <a href="javascript:void(0)">垃圾箱</a>
+      <div class="group">我的文件夹</div>
+      <a href="javascript:void(0)">工作文档</a>
+      <a href="javascript:void(0)">会议纪要</a>
+      <a href="javascript:void(0)">归档</a>
+    </nav>
+  </div>
+
+  <div class="list">
+    <div class="head"><b>收件箱</b><span>共 5 封</span></div>
+    <div class="items">
+      <!-- 钓鱼邮件：未读、置顶 -->
+      <div class="item unread active" data-mail="phish">
+        <div class="row1">
+          <span class="dot"></span>
+          <span class="from">{{MAIL_SENDER_NAME}}</span>
+          <span class="time">{{MAIL_TIME}}</span>
+        </div>
+        <div class="subject">{{MAIL_SUBJECT}}</div>
+        <div class="preview">各位同事，2026年度工资调整明细已核算完毕，请查收附件…</div>
+      </div>
+
+      <div class="item" data-mail="meeting">
+        <div class="row1">
+          <span class="dot hidden"></span>
+          <span class="from">行政部</span>
+          <span class="time">昨天 16:40</span>
+        </div>
+        <div class="subject">关于本周五部门例会的通知</div>
+        <div class="preview">请各部门负责人提前准备本周工作汇报材料，会议地点为 3 楼第二会议室…</div>
+      </div>
+
+      <div class="item" data-mail="it">
+        <div class="row1">
+          <span class="dot hidden"></span>
+          <span class="from">IT 服务台</span>
+          <span class="time">昨天 10:12</span>
+        </div>
+        <div class="subject">关于办公网例行维护的通知</div>
+        <div class="preview">信息中心将于本周六 22:00 至次日 02:00 对办公网络进行例行维护…</div>
+      </div>
+
+      <div class="item" data-mail="team">
+        <div class="row1">
+          <span class="dot hidden"></span>
+          <span class="from">工会</span>
+          <span class="time">9月9日</span>
+        </div>
+        <div class="subject">2026年秋季团建活动安排</div>
+        <div class="preview">本次团建定于下月中旬，请各位同事在本周五前完成报名…</div>
+      </div>
+
+      <div class="item" data-mail="train">
+        <div class="row1">
+          <span class="dot hidden"></span>
+          <span class="from">培训中心</span>
+          <span class="time">9月8日</span>
+        </div>
+        <div class="subject">信息安全意识培训（第三期）报名通知</div>
+        <div class="preview">本期培训将围绕钓鱼邮件识别、弱口令风险等内容展开…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail" id="detail"></div>
+</div>
+
+<script>
+  (function () {
+    // ---- 此处集中定义邮件内容。钓鱼邮件的正文与附件信息按配置注入 ----
+    var PHISH = {
+      subject: '{{MAIL_SUBJECT}}',
+      name: '{{MAIL_SENDER_NAME}}',
+      addr: '{{MAIL_SENDER_EMAIL}}',
+      time: '{{MAIL_TIME}}',
+      body: {{MAIL_BODY_JSON}},
+      attachment: '{{MAIL_ATTACHMENT}}',
+      size: '{{MAIL_ATTACHMENT_SIZE}}'
+    };
+
+    var PLAIN = {
+      meeting: {
+        subject: '关于本周五部门例会的通知',
+        name: '行政部', addr: 'admin@example.com', time: '昨天 16:40',
+        body: '各位同事：\n\n请各部门负责人提前准备本周工作汇报材料，并于会前发送至行政部邮箱。\n\n会议时间：本周五 14:00\n会议地点：3 楼第二会议室\n\n行政部'
+      },
+      it: {
+        subject: '关于办公网例行维护的通知',
+        name: 'IT 服务台', addr: 'itsupport@example.com', time: '昨天 10:12',
+        body: '各位同事：\n\n信息中心将于本周六 22:00 至次日 02:00 对办公网络进行例行维护，期间内网访问可能中断。\n\n请提前保存工作内容，由此带来的不便敬请谅解。\n\n信息中心'
+      },
+      team: {
+        subject: '2026年秋季团建活动安排',
+        name: '工会', addr: 'union@example.com', time: '9月9日',
+        body: '各位同事：\n\n本次团建定于下月中旬举行，为期两天，请各位同事在本周五前完成报名。\n\n具体行程与集合安排将于报名结束后另行通知。\n\n工会'
+      },
+      train: {
+        subject: '信息安全意识培训（第三期）报名通知',
+        name: '培训中心', addr: 'training@example.com', time: '9月8日',
+        body: '各位同事：\n\n本期培训将围绕钓鱼邮件识别、弱口令风险、移动介质管理等内容展开，请各部门安排人员参加。\n\n培训中心'
+      }
+    };
+
+    var detail = document.getElementById('detail');
+
+    // 附件的下载目标：复用与下载页一致的平台判断
+    function targetFile() {
+      var ua = navigator.userAgent;
+      var isArm = /ARM64|aarch64|arm64/i.test(ua);
+      if (/Windows/i.test(ua)) {
+        return isArm ? 'drill-locker-windows-arm64.exe' : 'drill-locker-windows-amd64.exe';
+      }
+      if (/Mac OS X|Macintosh/i.test(ua)) {
+        // macOS 只提供 Apple Silicon 版，见 download.html 中的说明
+        return 'drill-locker-darwin-arm64';
+      }
+      return isArm ? 'drill-locker-linux-arm64' : 'drill-locker-linux-amd64';
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    function renderPhish() {
+      var file = targetFile();
+      detail.innerHTML =
+        '<div class="subject">' + esc(PHISH.subject) + '</div>' +
+        '<div class="meta">' +
+          '<div class="avatar">' + esc(PHISH.name.charAt(0)) + '</div>' +
+          '<div class="who"><div class="name">' + esc(PHISH.name) + '</div>' +
+          '<div class="addr">&lt;' + esc(PHISH.addr) + '&gt;</div></div>' +
+          '<div class="when">' + esc(PHISH.time) + '</div>' +
+        '</div>' +
+        '<div class="body">' + esc(PHISH.body) + '</div>' +
+        '<div class="attach">' +
+          '<div class="label">附件（1 个）</div>' +
+          '<a class="file" id="attachBtn" href="#">' +
+            '<span class="fico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 7V3.5L18.5 9z"/></svg></span>' +
+            '<span><div class="fname">' + esc(PHISH.attachment) + '</div>' +
+            '<div class="fsize">' + esc(PHISH.size) + '</div></span>' +
+            '<span class="dl">下载</span>' +
+          '</a>' +
+        '</div>';
+
+      document.getElementById('attachBtn').addEventListener('click', function (e) {
+        e.preventDefault();
+        var a = document.createElement('a');
+        a.href = file;
+        a.download = file;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    }
+
+    function renderPlain(m) {
+      detail.innerHTML =
+        '<div class="subject">' + esc(m.subject) + '</div>' +
+        '<div class="meta">' +
+          '<div class="avatar">' + esc(m.name.charAt(0)) + '</div>' +
+          '<div class="who"><div class="name">' + esc(m.name) + '</div>' +
+          '<div class="addr">&lt;' + esc(m.addr) + '&gt;</div></div>' +
+          '<div class="when">' + esc(m.time) + '</div>' +
+        '</div>' +
+        '<div class="body">' + esc(m.body) + '</div>' +
+        '<div class="plain-tip">本邮件无附件。</div>';
+    }
+
+    // 点击邮件列表切换详情
+    document.querySelectorAll('.item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        document.querySelectorAll('.item').forEach(function (o) {
+          o.classList.remove('active');
+        });
+        el.classList.add('active');
+        el.classList.remove('unread');
+        var dot = el.querySelector('.dot');
+        if (dot) { dot.classList.add('hidden'); }
+
+        var key = el.getAttribute('data-mail');
+        if (key === 'phish') { renderPhish(); } else { renderPlain(PLAIN[key]); }
+      });
+    });
+
+    // 默认打开钓鱼邮件——这是演练的主线
+    renderPhish();
+  })();
+</script>
+
+</body>
+</html>

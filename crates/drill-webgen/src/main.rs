@@ -42,8 +42,10 @@ fn run() -> Result<()> {
 
     let pages = [
         ("index.html", template::index_html(&cfg)),
+        ("browser.html", template::browser_html(&cfg)),
         ("download.html", template::download_html(&cfg)),
         ("search.html", template::search_html(&cfg)),
+        ("mail.html", template::mail_html(&cfg)),
     ];
 
     // 渲染后不应再有未替换的占位符，出现即说明模板里写错了键名。

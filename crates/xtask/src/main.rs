@@ -284,8 +284,10 @@ fn package() -> Result<()> {
     // 2) 网页
     for (name, html) in [
         ("index.html", drill_core::template::index_html(&cfg)),
+        ("browser.html", drill_core::template::browser_html(&cfg)),
         ("download.html", drill_core::template::download_html(&cfg)),
         ("search.html", drill_core::template::search_html(&cfg)),
+        ("mail.html", drill_core::template::mail_html(&cfg)),
     ] {
         let path = dist.join(name);
         std::fs::write(&path, html).with_context(|| format!("写入失败：{}", path.display()))?;
@@ -490,15 +492,21 @@ fn notice_text(cfg: &drill_core::Config) -> String {
     s.push_str("  start-drill.bat           Windows：双击启动演练\n");
     s.push_str("  start-drill.sh            Linux：在终端执行\n");
     s.push_str("  restore.command / .bat / .sh   对应平台的一键恢复\n");
-    s.push_str("  index.html / search.html / download.html  仿冒的浏览器与搜索页面\n");
+    s.push_str("  index.html                演练入口：选择演练场景\n");
+    s.push_str("  browser.html              场景一·文件下载：仿浏览器新标签页\n");
+    s.push_str("  search.html               场景一：仿搜索结果页（广告位是陷阱）\n");
+    s.push_str("  mail.html                 场景二·邮件钓鱼：仿邮箱收件箱\n");
+    s.push_str("  download.html             仿软件下载站\n");
     s.push_str("  wallpaper.png             演练用的桌面壁纸\n");
     s.push_str("  manifest.json             锁定记录（演练后自动生成，请勿删除）\n\n");
 
     s.push_str("【演练流程】\n");
     s.push_str("  1. 把本目录放在演练用的专用文件夹中（不要放在家目录或系统目录下）；\n");
-    s.push_str("  2. 打开 index.html，在搜索框里输入关键词（例如「chrome 下载」）并回车，\n");
-    s.push_str("     进入仿搜索结果页，点击置顶的那条「广告」结果，进入下载页；\n");
-    s.push_str("  3. 在下载页点「立即下载」；或直接运行 drill-locker\n");
+    s.push_str("  2. 打开 index.html，在「文件下载勒索」与「邮件勒索」两个场景中选一个：\n");
+    s.push_str("     · 文件下载：在搜索框输入关键词（如「chrome 下载」）回车，点置顶的\n");
+    s.push_str("       「广告」结果进入下载页；\n");
+    s.push_str("     · 邮件勒索：在收件箱里点开那封人事通知邮件，点击其中的附件；\n");
+    s.push_str("  3. 在下载页点「立即下载」，或在邮件里点附件；也可直接运行 drill-locker\n");
     s.push_str("     （macOS 双击 start-drill.command，Windows 双击 start-drill.bat）；\n");
     s.push_str("  4. 观察参演人员的应急响应过程。\n\n");
 
